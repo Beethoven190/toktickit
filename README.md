@@ -1,4 +1,4 @@
-# TokTickIT (ตอกติ๊กกิต) — IT Service Desk
+# TokTickIT — IT Service Desk
 
 TokTickIT is an IT service desk web application developed as part of **CPE 334: Introduction to Software Engineering in the Age of AI Agents** (Lab 1: Full-Stack Hello World Starter). 
 

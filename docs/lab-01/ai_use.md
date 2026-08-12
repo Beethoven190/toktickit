@@ -1,6 +1,6 @@
 # Lab 1 — AI Use and Reflection
 
-**LLM/agent used:** Antigravity (Gemini 3.5 Flash)
+**LLM/agent used:** Antigravity (Gemini 3.5 Flash / Gemini 3.6 Flash)
 
 ## Selected key prompts (6–10)
 | # | Prompt (summarised) | What I did with the result |
@@ -9,6 +9,8 @@
 | 2 | Create `lab1-staging` and push it, then create `feature/1-project-foundation` | Configured branch structure as required by Git Flow, and pushed to GitHub. |
 | 3 | Install client and server dependencies, check database connection using Prisma | Ran `npm install` in both packages and verified database connectivity. |
 | 4 | Write README.md documentation with setup instructions | Created comprehensive guides for running client and server apps. |
+| 5 | Implement `GET /api/health` in Express server and verify with Supertest | Added route returning HTTP 200 `{ status: "ok", service: "TokTickIT API" }`, and test passed successfully. |
+| 6 | Integrate frontend health check in `client/src/api.ts` and `client/src/App.tsx` | Handled loading, success (Online), and error (Offline) state rendering. |
 
 ## Reflection
-So far, using the AI agent has helped speed up the repository branch structure configuration and workspace dependency setup. The agent has been accurate in handling local PowerShell syntax and ensuring that local environment configurations (`.env` files) are correctly initialized without being committed to git.
+Using the AI agent enabled fast implementation and test-driven verification of REST endpoints. The agent immediately executed Supertest to verify that the HTTP status and JSON response matched the specifications. Splitting work by small issues and waiting for peer reviews ensured clean Git branches and verified changes before merging.
