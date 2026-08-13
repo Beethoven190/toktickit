@@ -22,12 +22,12 @@
 ## Pull Requests I reviewed for my partner
 **PR Link:** https://github.com/SANOP19/toktickit/pull/1  
 **My comment:**
-> ตรวจทานโค้ดสำหรับ Issue 1 (Project Foundation) เรียบร้อยแล้วครับ 👍  
-> - การตั้งค่า Git Flow ถูกต้อง (ดึงจาก feature/1-project-foundation เข้าสู่ lab1-staging)  
-> - โครงสร้างโปรเจกต์ครบถ้วนทั้งฝั่ง client/, server/ และ docs/  
-> - มีการแยกไฟล์ .env.example ชัดเจน ไม่มีไฟล์ sensitive/.env หรือ node_modules หลุดขึ้นมา  
-> - โครงสร้างเริ่มต้นและชุดทดสอบ Vitest/Supertest พร้อมสำหรับการเริ่มทำ Issue 2 ครับ  
-> Approved ครับผม! 🎉
+> LGTM! Everything is set up properly for Issue 1:  
+> - Correct branch structure targeting `lab1-staging` (from `feature/1-project-foundation`).  
+> - Full project scaffold present across `client/`, `server/`, and `docs/`.  
+> - `.gitignore` and `.env.example` are properly configured without any leaked secrets or `node_modules`.  
+> - Starter configurations and test suites for Vitest/Supertest are ready for Issue 2.  
+> Approved! 🎉
 
 **Partner's response:**
 > Merged pull request
