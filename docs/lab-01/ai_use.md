@@ -11,6 +11,7 @@
 | 4 | Write README.md documentation with setup instructions | Created comprehensive guides for running client and server apps. |
 | 5 | Implement `GET /api/health` in Express server and verify with Supertest | Added route returning HTTP 200 `{ status: "ok", service: "TokTickIT API" }`, and test passed successfully. |
 | 6 | Integrate frontend health check in `client/src/api.ts` and `client/src/App.tsx` | Handled loading, success (Online), and error (Offline) state rendering. |
+| 7 | Create Prisma Category model, run migration, and write idempotent seed script | Defined schema, generated migration, and seeded 4 categories using upsert. |
 
 ## Reflection
 Using the AI agent enabled fast implementation and test-driven verification of REST endpoints. The agent immediately executed Supertest to verify that the HTTP status and JSON response matched the specifications. Splitting work by small issues and waiting for peer reviews ensured clean Git branches and verified changes before merging.
