@@ -11,14 +11,19 @@
 | #7 | feature/3-category-seed | Approved |
 | #8 | feature/4-category-list | Approved |
 
+### Issue 1: Set up the TokTickIT project foundation
+**PR Link:** https://github.com/Beethoven190/toktickit/pull/1  
 **Reviewer comment I received (PR #1):**
-> Project Structure: Client (React + Vite + Bootstrap) and Server (Express + Prisma + TypeScript) are well-structured and aligned with the requirements.  
-> Dependencies & Config: Vitest and Supertest testing frameworks, .gitignore, and .env.example are properly configured.  
-> Documentation: Initial README setup instructions are clear.
+> Here is my review summary:
+> - Project Structure: Client (React + Vite + Bootstrap) and Server (Express + Prisma + TypeScript) are well-structured and aligned with the requirements.  
+> - Dependencies & Config: Vitest and Supertest testing frameworks, .gitignore, and .env.example are properly configured.  
+> - Documentation: Initial README setup instructions are clear.
 
 **How I responded:**
 > Thanks @SANOP19 I will merge that immediately.
 
+### Issue 2: Implement the API health check
+**PR Link:** https://github.com/Beethoven190/toktickit/pull/2  
 **Reviewer comment I received (PR #2):**
 > Summary:  
 > - API Endpoint: `GET /api/health` returns HTTP 200 OK with `{ status: "ok", service: "TokTickIT API" }` as specified.  
@@ -28,6 +33,8 @@
 **How I responded:**
 > Thanks for the review! Merging this into `lab1-staging`.
 
+### Issue 3: Create and seed IT request categories
+**PR Link:** https://github.com/Beethoven190/toktickit/pull/7  
 **Reviewer comment I received (PR #7):**
 > Summary:  
 > - Prisma Schema: `Category` model defined with `id`, unique `name`, and `createdAt`.  
@@ -38,12 +45,14 @@
 **How I responded:**
 > Thanks for the review! Merging this into `lab1-staging`.
 
+### Issue 4: Display the IT request category list
+**PR Link:** https://github.com/Beethoven190/toktickit/pull/8  
 **Reviewer comment I received (PR #8):**
 > Summary:  
-> - Backend Endpoint: `GET /api/categories` retrieves categories in predictable ID order from PostgreSQL using Prisma.  
-> - Integration Test: Supertest test in `categories.test.ts` passes asserting all 4 seeded categories.  
-> - Frontend Integration: `checkSystem()` calls both health and categories endpoints, rendering dynamic categories in React UI.  
-> - Frontend Tests: Vitest tests in `App.test.tsx` pass covering all UI states.
+> - Backend: `GET /api/categories` endpoint properly retrieves categories from PostgreSQL via Prisma in predictable `id` order.  
+> - Backend Test: Supertest test in `categories.test.ts` successfully asserts HTTP 200 and the 4 seeded categories.  
+> - Frontend: `checkSystem()` fetches both health and categories, dynamically rendering the real categories on React UI.  
+> - Frontend Test: Vitest tests in `App.test.tsx` verify the component states and category list rendering.
 
 **How I responded:**
 > Thanks for the review! Merging this into `lab1-staging`.
