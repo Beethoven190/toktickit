@@ -12,6 +12,9 @@
 | 5 | Implement `GET /api/health` in Express server and verify with Supertest | Added route returning HTTP 200 `{ status: "ok", service: "TokTickIT API" }`, and test passed successfully. |
 | 6 | Integrate frontend health check in `client/src/api.ts` and `client/src/App.tsx` | Handled loading, success (Online), and error (Offline) state rendering. |
 | 7 | Create Prisma Category model, run migration, and write idempotent seed script | Defined schema, generated migration, and seeded 4 categories using upsert. |
+| 8 | Implement `GET /api/categories` in Express backend with Prisma and Supertest | Added route returning categories array in ID order, and verified with passing Supertest test. |
+| 9 | Integrate category fetching into React client and write Vitest component tests | Connected `checkSystem()` to fetch real categories from DB and asserted rendering with Vitest. |
+| 10 | Update test plan, peer review records, and AI usage documentation | Recorded all passing test terminal evidence and verified GitHub peer review comments. |
 
 ## Reflection
-Using the AI agent enabled fast implementation and test-driven verification of REST endpoints. The agent immediately executed Supertest to verify that the HTTP status and JSON response matched the specifications. Splitting work by small issues and waiting for peer reviews ensured clean Git branches and verified changes before merging.
+Working with the Antigravity AI coding agent greatly accelerated the full-stack development workflow, from configuring Git Flow branch targets to executing automated Supertest and Vitest test suites. Using precise, scoped prompts for each individual issue ensured that features were implemented strictly according to acceptance criteria without polluting other branches. Waiting for peer reviews between issues also helped catch any potential branch target mistakes before merging into `lab1-staging`.

@@ -1,14 +1,14 @@
 # Lab 1 — Peer Review Record
 
 **Author:** Supanut Watthanasimakorn — GitHub: @Beethoven190  
-**Peer reviewer:** GitHub: @SANOP19  
+**Peer reviewer:** Nititorn Ketkaew — GitHub: @SANOP19  
 
 ## Pull Requests I authored (reviewed by my partner)
 | PR | Branch | Reviewer verdict |
 |----|--------|------------------|
 | #1 | feature/1-project-foundation | Approved |
 | #2 | feature/2-health-check | Approved |
-|    | feature/3-category-seed |  |
+| #7 | feature/3-category-seed | Approved |
 |    | feature/4-category-list |  |
 
 **Reviewer comment I received (PR #1):**
@@ -24,6 +24,16 @@
 > - API Endpoint: `GET /api/health` returns HTTP 200 OK with `{ status: "ok", service: "TokTickIT API" }` as specified.  
 > - Integration Test: Supertest integration test in `health.test.ts` passes.  
 > - Frontend: Handled loading, Online, and Offline states properly with error messages.
+
+**How I responded:**
+> Thanks for the review! Merging this into `lab1-staging`.
+
+**Reviewer comment I received (PR #7):**
+> Summary:  
+> - Prisma Schema: `Category` model defined with `id`, unique `name`, and `createdAt`.  
+> - Migration: Successfully generated and applied PostgreSQL migration.  
+> - Seeding: `server/prisma/seed.ts` upserts the 4 default categories safely and idempotently without duplicate records.  
+> - Security: No sensitive credentials committed.
 
 **How I responded:**
 > Thanks for the review! Merging this into `lab1-staging`.
@@ -46,13 +56,27 @@
 > Merged pull request
 
 ### Issue 2: API Health Check
-**PR Link:** https://github.com/SANOP19/toktickit/pull/2  
+**PR Link:** https://github.com/SANOP19/toktickit/pull/6  
 **My comment:**
-> LGTM! All acceptance criteria for Issue 2 (API Health Check) have been satisfied:  
-> - Backend endpoint `GET /api/health` returns 200 with `{ status: "ok", service: "TokTickIT API" }`.  
-> - Supertest integration test in `health.test.ts` passes.  
-> - Frontend correctly integrates `checkSystem()` and displays Online/Offline status.  
-> - Git Flow target branch is correct (`feature/2-health-check` -> `lab1-staging`).  
+> LGTM! All acceptance criteria for Issue 2 (Implement the API health check) have been satisfied:  
+> - Backend: Endpoint `GET /api/health` returns HTTP 200 OK with `{ status: "ok", service: "TokTickIT API" }`.  
+> - Backend Test: Supertest test in `health.test.ts` passes.  
+> - Frontend: `checkSystem()` properly connects to `/api/health` and handles UI states (Online / Offline error message).  
+> - Git Flow: Target branch correctly set to `lab1-staging`.  
+> Approved!
+
+**Partner's response:**
+> Merged pull request
+
+### Issue 3: Create and seed IT request categories
+**PR Link:** https://github.com/pimchayasupr-hash/toktickit/pull/13  
+**My comment:**
+> LGTM! All acceptance criteria for Issue 3 (Create and seed IT request categories) have been satisfied:  
+> - Prisma Schema: `Category` model is properly defined with `id`, unique `name`, and `createdAt`.  
+> - Database Migration: Migration files created to set up the `Category` table in PostgreSQL.  
+> - Seeding Script: `server/prisma/seed.ts` safely upserts the 4 required categories without creating duplicates on repeated runs.  
+> - Security: No database credentials or `.env` files are committed.  
+> - Git Flow: Target branch is correctly set to `lab1-staging`.  
 > Approved!
 
 **Partner's response:**
