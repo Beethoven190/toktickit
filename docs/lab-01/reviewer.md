@@ -9,7 +9,7 @@
 | #1 | feature/1-project-foundation | Approved |
 | #2 | feature/2-health-check | Approved |
 | #7 | feature/3-category-seed | Approved |
-|    | feature/4-category-list |  |
+| #8 | feature/4-category-list | Approved |
 
 **Reviewer comment I received (PR #1):**
 > Project Structure: Client (React + Vite + Bootstrap) and Server (Express + Prisma + TypeScript) are well-structured and aligned with the requirements.  
@@ -34,6 +34,16 @@
 > - Migration: Successfully generated and applied PostgreSQL migration.  
 > - Seeding: `server/prisma/seed.ts` upserts the 4 default categories safely and idempotently without duplicate records.  
 > - Security: No sensitive credentials committed.
+
+**How I responded:**
+> Thanks for the review! Merging this into `lab1-staging`.
+
+**Reviewer comment I received (PR #8):**
+> Summary:  
+> - Backend Endpoint: `GET /api/categories` retrieves categories in predictable ID order from PostgreSQL using Prisma.  
+> - Integration Test: Supertest test in `categories.test.ts` passes asserting all 4 seeded categories.  
+> - Frontend Integration: `checkSystem()` calls both health and categories endpoints, rendering dynamic categories in React UI.  
+> - Frontend Tests: Vitest tests in `App.test.tsx` pass covering all UI states.
 
 **How I responded:**
 > Thanks for the review! Merging this into `lab1-staging`.
@@ -69,14 +79,28 @@
 > Merged pull request
 
 ### Issue 3: Create and seed IT request categories
-**PR Link:** https://github.com/pimchayasupr-hash/toktickit/pull/13  
+**PR Link:** https://github.com/SANOP19/toktickit/pull/7  
 **My comment:**
 > LGTM! All acceptance criteria for Issue 3 (Create and seed IT request categories) have been satisfied:  
 > - Prisma Schema: `Category` model is properly defined with `id`, unique `name`, and `createdAt`.  
-> - Database Migration: Migration files created to set up the `Category` table in PostgreSQL.  
-> - Seeding Script: `server/prisma/seed.ts` safely upserts the 4 required categories without creating duplicates on repeated runs.  
-> - Security: No database credentials or `.env` files are committed.  
-> - Git Flow: Target branch is correctly set to `lab1-staging`.  
+> - Database Migration: Migration files set up the `Category` table in PostgreSQL.  
+> - Seeding Script: `server/prisma/seed.ts` safely upserts the 4 required categories (`Account and Access`, `Hardware`, `Software`, `Network`) without creating duplicates on repeated runs.  
+> - Security: No database credentials or `.env` files committed.  
+> - Git Flow: Target branch correctly set to `lab1-staging`.  
+> Approved!
+
+**Partner's response:**
+> Merged pull request
+
+### Issue 4: Display the IT request category list
+**PR Link:** https://github.com/SANOP19/toktickit/pull/8  
+**My comment:**
+> LGTM! All acceptance criteria for Issue 4 (Display the IT request category list) have been satisfied:  
+> - Backend: `GET /api/categories` properly retrieves categories from PostgreSQL via Prisma in predictable `id` order.  
+> - Backend Test: Supertest test in `categories.test.ts` asserts HTTP 200 and the 4 seeded categories.  
+> - Frontend: `checkSystem()` fetches both health and categories, dynamically rendering real categories on React UI.  
+> - Frontend Test: Vitest component tests in `App.test.tsx` verify the category list rendering and UI states.  
+> - Git Flow: Target branch correctly set to `lab1-staging`.  
 > Approved!
 
 **Partner's response:**
