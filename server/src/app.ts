@@ -188,4 +188,116 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Lab 2 — Issue 4: My Tickets list with search, filter, sort, pagination,
+// and strict Ownership Protection (Rule BR-05, AC-03, AC-07)
+// ---------------------------------------------------------------------------
+app.get("/api/tickets", async (req: Request, res: Response) => {
+  try {
+    const {
+      requesterId,
+      search,
+      categoryId,
+      priority,
+      status,
+      page = "1",
+      limit = "10",
+      sort = "createdAt",
+      order = "desc",
+    } = req.query;
+
+    if (!requesterId) {
+      return res.status(400).json({ error: "requesterId is required for ownership protection" });
+    }
+
+    const reqId = Number(requesterId);
+    if (isNaN(reqId)) {
+      return res.status(400).json({ error: "requesterId must be a number" });
+    }
+
+    const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(String(limit), 10) || 10));
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build where clause ensuring STRICT ownership protection (BR-05)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = {
+      requesterId: reqId,
+    };
+
+    if (categoryId) {
+      const catId = Number(categoryId);
+      if (!isNaN(catId)) {
+        where.categoryId = catId;
+      }
+    }
+
+    if (priority && ["LOW", "MEDIUM", "HIGH"].includes(String(priority).toUpperCase())) {
+      where.requestedPriority = String(priority).toUpperCase();
+    }
+
+    if (status) {
+      where.currentStatus = String(status).toUpperCase();
+    }
+
+    if (search && typeof search === "string" && search.trim() !== "") {
+      const term = search.trim();
+      where.OR = [
+        {
+          summary: {
+            contains: term,
+            mode: "insensitive",
+          },
+        },
+        {
+          ticketNumber: {
+            contains: term,
+            mode: "insensitive",
+          },
+        },
+      ];
+    }
+
+    const allowedSortFields = ["createdAt", "ticketNumber", "requestedPriority", "currentStatus"];
+    const sortField = allowedSortFields.includes(String(sort)) ? String(sort) : "createdAt";
+    const sortOrder = String(order).toLowerCase() === "asc" ? "asc" : "desc";
+
+    const prisma = getPrisma();
+
+    const [total, tickets] = await Promise.all([
+      prisma.ticket.count({ where }),
+      prisma.ticket.findMany({
+        where,
+        orderBy: {
+          [sortField]: sortOrder,
+        },
+        skip,
+        take: limitNum,
+        include: {
+          category: true,
+          relatedSystem: true,
+          requester: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / limitNum) || 1;
+
+    res.status(200).json({
+      data: tickets,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages,
+      },
+    });
+  } catch (err) {
+    console.error("Failed to fetch tickets:", err);
+    res.status(500).json({ error: "Failed to fetch tickets" });
+  }
+});
+
 export default app;

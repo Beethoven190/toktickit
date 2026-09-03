@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { RequesterUser, checkSystem, Category } from "./api.js";
 import DevelopmentRequesterSelector from "./components/DevelopmentRequesterSelector.js";
 import CreateTicket from "./components/CreateTicket.js";
+import MyTickets from "./components/MyTickets.js";
 
 type UiState = "idle" | "loading" | "success" | "error";
 
@@ -142,14 +143,23 @@ export default function App() {
 
       {/* Main Container */}
       <main className="container py-4" style={{ maxWidth: 960 }}>
-        {/* Render Create Ticket view when selected */}
-        {activeTab === "create-ticket" ? (
+        {/* Render Views Based on Active Tab */}
+        {activeTab === "create-ticket" && (
           <CreateTicket
             currentRequester={currentRequester}
-            onCancel={() => setActiveTab("dashboard")}
-            onTicketCreated={() => {}}
+            onCancel={() => setActiveTab("my-tickets")}
+            onTicketCreated={() => setActiveTab("my-tickets")}
           />
-        ) : (
+        )}
+
+        {activeTab === "my-tickets" && (
+          <MyTickets
+            currentRequester={currentRequester}
+            onCreateNew={() => setActiveTab("create-ticket")}
+          />
+        )}
+
+        {activeTab === "dashboard" && (
           <>
             {/* Banner showing active requester context */}
             <div
@@ -170,13 +180,17 @@ export default function App() {
                     type="button"
                     className="btn btn-sm px-3 text-white"
                     style={{ backgroundColor: "#006B3C" }}
+                    onClick={() => setActiveTab("my-tickets")}
+                  >
+                    📋 View My Tickets
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-success px-3"
                     onClick={() => setActiveTab("create-ticket")}
                   >
                     ➕ New Ticket
                   </button>
-                  <span className="badge px-3 py-2 d-flex align-items-center" style={{ backgroundColor: "#EAF6EF", color: "#006B3C" }}>
-                    Development Mode (Lab 2)
-                  </span>
                 </div>
               </div>
             </div>
