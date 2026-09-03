@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { RequesterUser, checkSystem, Category } from "./api.js";
 import DevelopmentRequesterSelector from "./components/DevelopmentRequesterSelector.js";
+import CreateTicket from "./components/CreateTicket.js";
 
 type UiState = "idle" | "loading" | "success" | "error";
 
@@ -75,12 +76,28 @@ export default function App() {
         style={{ backgroundColor: "#006B3C" }}
       >
         <div className="container-fluid">
-          <span className="navbar-brand fw-bold d-flex align-items-center mb-0">
+          <span
+            className="navbar-brand fw-bold d-flex align-items-center mb-0"
+            style={{ cursor: "pointer" }}
+            onClick={() => setActiveTab("dashboard")}
+          >
             <span className="me-2 fs-5">⏱️</span> Service Desk
           </span>
 
           <div className="collapse navbar-collapse">
             <ul className="navbar-nav me-auto mb-0">
+              <li className="nav-item">
+                <button
+                  type="button"
+                  className={`btn btn-link nav-link px-3 py-1 ${
+                    activeTab === "dashboard" ? "active fw-bold text-white" : "text-white-50"
+                  }`}
+                  style={{ textDecoration: "none" }}
+                  onClick={() => setActiveTab("dashboard")}
+                >
+                  🏠 Dashboard
+                </button>
+              </li>
               <li className="nav-item">
                 <button
                   type="button"
@@ -124,79 +141,100 @@ export default function App() {
       </nav>
 
       {/* Main Container */}
-      <main className="container py-5" style={{ maxWidth: 960 }}>
-        {/* Banner showing active requester context */}
-        <div
-          className="card border-0 shadow-sm p-4 mb-4"
-          style={{ backgroundColor: "#FFFFFF", borderRadius: 12 }}
-        >
-          <div className="d-flex align-items-center justify-content-between flex-wrap">
-            <div>
-              <h2 className="h4 fw-bold mb-1" style={{ color: "#006B3C" }}>
-                Welcome, {currentRequester.name}
-              </h2>
-              <p className="text-muted mb-0 small">
-                Logged in as simulated requester: <span>{currentRequester.name}</span>
-              </p>
-            </div>
-            <span className="badge px-3 py-2 mt-2 mt-sm-0" style={{ backgroundColor: "#EAF6EF", color: "#006B3C" }}>
-              Development Mode (Lab 2)
-            </span>
-          </div>
-        </div>
-
-        {/* System Health Check & Categories Verification */}
-        <div className="card border-0 shadow-sm p-4" style={{ backgroundColor: "#FFFFFF", borderRadius: 12 }}>
-          <h1 className="h4 fw-bold mb-3" style={{ color: "#006B3C" }}>
-            TokTickIT <span className="text-success">IT Service Desk</span>
-          </h1>
-
-          <button
-            className="btn btn-success mb-3"
-            onClick={handleCheckSystem}
-            disabled={healthState === "loading"}
-            style={{ backgroundColor: "#006B3C", borderColor: "#006B3C" }}
-          >
-            {healthState === "loading" ? "Checking System..." : "Check System"}
-          </button>
-
-          {healthState === "loading" && (
-            <div className="text-muted">
-              <em>Loading system status...</em>
-            </div>
-          )}
-
-          {healthState === "success" && (
-            <div>
-              <p className="fw-semibold mb-3">
-                System Status: <span className="text-success">Online</span>
-              </p>
-              {categories.length > 0 && (
+      <main className="container py-4" style={{ maxWidth: 960 }}>
+        {/* Render Create Ticket view when selected */}
+        {activeTab === "create-ticket" ? (
+          <CreateTicket
+            currentRequester={currentRequester}
+            onCancel={() => setActiveTab("dashboard")}
+            onTicketCreated={() => {}}
+          />
+        ) : (
+          <>
+            {/* Banner showing active requester context */}
+            <div
+              className="card border-0 shadow-sm p-4 mb-4"
+              style={{ backgroundColor: "#FFFFFF", borderRadius: 12 }}
+            >
+              <div className="d-flex align-items-center justify-content-between flex-wrap">
                 <div>
-                  <p className="fw-semibold mb-2 text-muted small">Supported IT Request Categories:</p>
-                  <ol className="list-group list-group-numbered">
-                    {categories.map((cat) => (
-                      <li key={cat.id} className="list-group-item">
-                        {cat.name}
-                      </li>
-                    ))}
-                  </ol>
+                  <h2 className="h4 fw-bold mb-1" style={{ color: "#006B3C" }}>
+                    Welcome, {currentRequester.name}
+                  </h2>
+                  <p className="text-muted mb-0 small">
+                    Logged in as simulated requester: <span>{currentRequester.name}</span>
+                  </p>
+                </div>
+                <div className="d-flex gap-2 mt-2 mt-sm-0">
+                  <button
+                    type="button"
+                    className="btn btn-sm px-3 text-white"
+                    style={{ backgroundColor: "#006B3C" }}
+                    onClick={() => setActiveTab("create-ticket")}
+                  >
+                    ➕ New Ticket
+                  </button>
+                  <span className="badge px-3 py-2 d-flex align-items-center" style={{ backgroundColor: "#EAF6EF", color: "#006B3C" }}>
+                    Development Mode (Lab 2)
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* System Health Check & Categories Verification */}
+            <div className="card border-0 shadow-sm p-4" style={{ backgroundColor: "#FFFFFF", borderRadius: 12 }}>
+              <h1 className="h4 fw-bold mb-3" style={{ color: "#006B3C" }}>
+                TokTickIT <span className="text-success">IT Service Desk</span>
+              </h1>
+
+              <button
+                className="btn btn-success mb-3"
+                onClick={handleCheckSystem}
+                disabled={healthState === "loading"}
+                style={{ backgroundColor: "#006B3C", borderColor: "#006B3C" }}
+              >
+                {healthState === "loading" ? "Checking System..." : "Check System"}
+              </button>
+
+              {healthState === "loading" && (
+                <div className="text-muted">
+                  <em>Loading system status...</em>
+                </div>
+              )}
+
+              {healthState === "success" && (
+                <div>
+                  <p className="fw-semibold mb-3">
+                    System Status: <span className="text-success">Online</span>
+                  </p>
+                  {categories.length > 0 && (
+                    <div>
+                      <p className="fw-semibold mb-2 text-muted small">Supported IT Request Categories:</p>
+                      <ol className="list-group list-group-numbered">
+                        {categories.map((cat) => (
+                          <li key={cat.id} className="list-group-item">
+                            {cat.name}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {healthState === "error" && (
+                <div>
+                  <p className="fw-semibold mb-2">
+                    System Status: <span className="text-danger">Offline</span>
+                  </p>
+                  <div className="alert alert-danger mb-0" role="alert">
+                    {errorMessage || "Unable to connect to TokTickIT API"}
+                  </div>
                 </div>
               )}
             </div>
-          )}
-
-          {healthState === "error" && (
-            <div>
-              <p className="fw-semibold mb-2">
-                System Status: <span className="text-danger">Offline</span>
-              </p>
-              <div className="alert alert-danger mb-0" role="alert">
-                {errorMessage || "Unable to connect to TokTickIT API"}
-              </div>
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </main>
     </div>
   );
