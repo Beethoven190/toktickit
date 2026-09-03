@@ -8,11 +8,11 @@ const categories = [
 ];
 
 const requesters = [
-  { name: "Jennifer Anderson", email: "jennifer.a@toktickit.local", isActive: true },
-  { name: "David Lee", email: "david.l@toktickit.local", isActive: true },
-  { name: "Sarah Johnson", email: "sarah.j@toktickit.local", isActive: true },
-  { name: "Michael Brown", email: "michael.b@toktickit.local", isActive: true },
-  { name: "Emily Davis", email: "emily.d@toktickit.local", isActive: false },
+  { name: "Supanut Watthanasimakorn", email: "supanut.w@toktickit.local", isActive: true },
+  { name: "David Ice", email: "david.i@toktickit.local", isActive: true },
+  { name: "Nitithorn Katkaew", email: "nitithorn.k@toktickit.local", isActive: true },
+  { name: "Nara Kosiyaporn", email: "nara.k@toktickit.local", isActive: true },
+  { name: "Metier Leviathan", email: "metier.l@toktickit.local", isActive: false },
 ];
 
 async function main() {
@@ -27,6 +27,15 @@ async function main() {
   }
   console.log("Seeded categories successfully:", categories);
 
+  // Clean up old simulated accounts if needed
+  await prisma.requesterUser.deleteMany({
+    where: {
+      email: {
+        notIn: requesters.map((r) => r.email),
+      },
+    },
+  });
+
   for (const req of requesters) {
     await prisma.requesterUser.upsert({
       where: { email: req.email },
@@ -34,7 +43,7 @@ async function main() {
       create: req,
     });
   }
-  console.log(`Seeded ${requesters.length} Development Requesters successfully.`);
+  console.log(`Seeded ${requesters.length} Development Requesters successfully:`, requesters.map(r => r.name));
 }
 
 main()

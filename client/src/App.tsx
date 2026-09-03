@@ -6,8 +6,8 @@ type UiState = "idle" | "loading" | "success" | "error";
 
 export const DEFAULT_REQUESTER: RequesterUser = {
   id: 1,
-  name: "Jennifer Anderson",
-  email: "jennifer.a@local.dev",
+  name: "Supanut Watthanasimakorn",
+  email: "supanut.w@toktickit.local",
 };
 
 export default function App() {
@@ -136,7 +136,7 @@ export default function App() {
                 Welcome, {currentRequester.name}
               </h2>
               <p className="text-muted mb-0 small">
-                Logged in as simulated requester: <strong>{currentRequester.email}</strong>
+                Logged in as simulated requester: <span>{currentRequester.name}</span>
               </p>
             </div>
             <span className="badge px-3 py-2 mt-2 mt-sm-0" style={{ backgroundColor: "#EAF6EF", color: "#006B3C" }}>

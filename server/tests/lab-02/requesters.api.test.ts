@@ -10,12 +10,12 @@ describe("GET /api/requesters", () => {
     expect(res.body.length).toBeGreaterThanOrEqual(4);
 
     const names = res.body.map((r: { name: string }) => r.name);
-    expect(names).toContain("Jennifer Anderson");
-    expect(names).toContain("David Lee");
-    expect(names).toContain("Sarah Johnson");
-    expect(names).toContain("Michael Brown");
+    expect(names).toContain("Supanut Watthanasimakorn");
+    expect(names).toContain("David Ice");
+    expect(names).toContain("Nitithorn Katkaew");
+    expect(names).toContain("Nara Kosiyaporn");
 
     // BR-04: Inactive requesters must NEVER appear in the active selection list
-    expect(names).not.toContain("Emily Davis");
+    expect(names).not.toContain("Metier Leviathan");
   });
 });
