@@ -15,6 +15,15 @@ const requesters = [
   { name: "Metier Leviathan", email: "metier.l@toktickit.local", isActive: false },
 ];
 
+const systems = [
+  "Corporate Laptop",
+  "Email",
+  "Campus Wi-Fi",
+  "VPN",
+  "LEB2 App",
+  "Printer",
+];
+
 async function main() {
   const prisma = getPrisma();
 
@@ -26,6 +35,15 @@ async function main() {
     });
   }
   console.log("Seeded categories successfully:", categories);
+
+  for (const name of systems) {
+    await prisma.relatedSystem.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+  }
+  console.log("Seeded related systems successfully:", systems);
 
   // Clean up old simulated accounts if needed
   await prisma.requesterUser.deleteMany({

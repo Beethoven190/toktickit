@@ -5,10 +5,41 @@ export interface Category {
   name: string;
 }
 
+export interface RelatedSystem {
+  id: number;
+  name: string;
+}
+
 export interface RequesterUser {
   id: number;
   name: string;
   email: string;
+}
+
+export interface Ticket {
+  id: number;
+  ticketNumber: string;
+  requesterId: number;
+  categoryId: number;
+  relatedSystemId: number;
+  summary: string;
+  description: string;
+  requestedPriority: "LOW" | "MEDIUM" | "HIGH";
+  currentStatus: string;
+  createdAt: string;
+  updatedAt: string;
+  category?: Category;
+  relatedSystem?: RelatedSystem;
+  requester?: RequesterUser;
+}
+
+export interface CreateTicketDto {
+  requesterId: number;
+  categoryId: number;
+  relatedSystemId: number;
+  summary: string;
+  description: string;
+  requestedPriority: "LOW" | "MEDIUM" | "HIGH";
 }
 
 export interface SystemStatus {
@@ -21,6 +52,41 @@ export async function getActiveRequesters(): Promise<RequesterUser[]> {
   if (!res.ok) {
     throw new Error(`Failed to fetch requesters: ${res.status}`);
   }
+  return res.json();
+}
+
+export async function getCategories(): Promise<Category[]> {
+  const res = await fetch(`${API_URL}/api/categories`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch categories: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function getRelatedSystems(): Promise<RelatedSystem[]> {
+  const res = await fetch(`${API_URL}/api/systems`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch related systems: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function createTicket(dto: CreateTicketDto): Promise<Ticket> {
+  const res = await fetch(`${API_URL}/api/tickets`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(dto),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const error = new Error(errorData.error || `Ticket creation failed: ${res.status}`);
+    (error as unknown as { errors?: Record<string, string> }).errors = errorData.errors;
+    throw error;
+  }
+
   return res.json();
 }
 
