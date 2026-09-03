@@ -11,10 +11,21 @@ datasource db {
 }
 
 // ---------------------------------------------------------------------------
-// Issue 3 — Create and seed IT request categories
+// Issue 3 (Lab 1) — IT request categories
 // ---------------------------------------------------------------------------
 model Category {
   id        Int      @id @default(autoincrement())
   name      String   @unique
+  createdAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Issue 2 (Lab 2) — Development Requester Context
+// ---------------------------------------------------------------------------
+model RequesterUser {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 }
