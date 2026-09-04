@@ -16,6 +16,19 @@ export interface RequesterUser {
   email: string;
 }
 
+export interface Attachment {
+  id: number;
+  ticketId: number;
+  originalName: string;
+  storedName: string;
+  mimeType: string;
+  size: number;
+  isRemoved: boolean;
+  removalReason?: string | null;
+  removedAt?: string | null;
+  createdAt: string;
+}
+
 export interface Ticket {
   id: number;
   ticketNumber: string;
@@ -31,6 +44,7 @@ export interface Ticket {
   category?: Category;
   relatedSystem?: RelatedSystem;
   requester?: RequesterUser;
+  attachments?: Attachment[];
 }
 
 export interface CreateTicketDto {
@@ -121,6 +135,57 @@ export async function getMyTickets(params: {
   const res = await fetch(url.toString());
   if (!res.ok) {
     throw new Error(`Failed to fetch tickets: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function getTicketDetail(ticketId: number, requesterId: number): Promise<Ticket> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}?requesterId=${requesterId}`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to fetch ticket detail: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function uploadAttachment(ticketId: number, requesterId: number, file: File): Promise<Attachment> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("requesterId", String(requesterId));
+
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/attachments`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to upload attachment: ${res.status}`);
+  }
+  return res.json();
+}
+
+export function getAttachmentDownloadUrl(ticketId: number, attachmentId: number, requesterId: number): string {
+  return `${API_URL}/api/tickets/${ticketId}/attachments/${attachmentId}/file?requesterId=${requesterId}`;
+}
+
+export async function softRemoveAttachment(
+  ticketId: number,
+  attachmentId: number,
+  requesterId: number,
+  removalReason: string
+): Promise<Attachment> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/attachments/${attachmentId}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ requesterId, removalReason }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to remove attachment: ${res.status}`);
   }
   return res.json();
 }

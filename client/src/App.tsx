@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { RequesterUser, checkSystem, Category } from "./api.js";
+import { RequesterUser, checkSystem, Category, Ticket } from "./api.js";
 import DevelopmentRequesterSelector from "./components/DevelopmentRequesterSelector.js";
 import CreateTicket from "./components/CreateTicket.js";
 import MyTickets from "./components/MyTickets.js";
+import TicketDetail from "./components/TicketDetail.js";
 
 type UiState = "idle" | "loading" | "success" | "error";
 
@@ -16,6 +17,7 @@ export default function App() {
   const [currentRequester, setCurrentRequester] = useState<RequesterUser>(DEFAULT_REQUESTER);
   const [showSelector, setShowSelector] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<"dashboard" | "my-tickets" | "create-ticket">("dashboard");
+  const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
 
   // Health check state (from Lab 1)
   const [healthState, setHealthState] = useState<UiState>("idle");
@@ -36,6 +38,7 @@ export default function App() {
   function handleSelectRequester(requester: RequesterUser) {
     setCurrentRequester(requester);
     setShowSelector(false);
+    setSelectedTicketId(null);
     try {
       localStorage.setItem("toktickit_selected_requester", JSON.stringify(requester));
     } catch {
@@ -45,6 +48,11 @@ export default function App() {
 
   function handleChangeRequester() {
     setShowSelector(true);
+  }
+
+  function handleNavigate(tab: "dashboard" | "my-tickets" | "create-ticket") {
+    setSelectedTicketId(null);
+    setActiveTab(tab);
   }
 
   async function handleCheckSystem() {
@@ -80,7 +88,7 @@ export default function App() {
           <span
             className="navbar-brand fw-bold d-flex align-items-center mb-0"
             style={{ cursor: "pointer" }}
-            onClick={() => setActiveTab("dashboard")}
+            onClick={() => handleNavigate("dashboard")}
           >
             <span className="me-2 fs-5">⏱️</span> Service Desk
           </span>
@@ -91,10 +99,10 @@ export default function App() {
                 <button
                   type="button"
                   className={`btn btn-link nav-link px-3 py-1 ${
-                    activeTab === "dashboard" ? "active fw-bold text-white" : "text-white-50"
+                    activeTab === "dashboard" && selectedTicketId === null ? "active fw-bold text-white" : "text-white-50"
                   }`}
                   style={{ textDecoration: "none" }}
-                  onClick={() => setActiveTab("dashboard")}
+                  onClick={() => handleNavigate("dashboard")}
                 >
                   🏠 Dashboard
                 </button>
@@ -103,10 +111,10 @@ export default function App() {
                 <button
                   type="button"
                   className={`btn btn-link nav-link px-3 py-1 ${
-                    activeTab === "my-tickets" ? "active fw-bold text-white" : "text-white-50"
+                    activeTab === "my-tickets" || selectedTicketId !== null ? "active fw-bold text-white" : "text-white-50"
                   }`}
                   style={{ textDecoration: "none" }}
-                  onClick={() => setActiveTab("my-tickets")}
+                  onClick={() => handleNavigate("my-tickets")}
                 >
                   📋 My Tickets
                 </button>
@@ -115,10 +123,10 @@ export default function App() {
                 <button
                   type="button"
                   className={`btn btn-link nav-link px-3 py-1 ${
-                    activeTab === "create-ticket" ? "active fw-bold text-white" : "text-white-50"
+                    activeTab === "create-ticket" && selectedTicketId === null ? "active fw-bold text-white" : "text-white-50"
                   }`}
                   style={{ textDecoration: "none" }}
-                  onClick={() => setActiveTab("create-ticket")}
+                  onClick={() => handleNavigate("create-ticket")}
                 >
                   ➕ Create Ticket
                 </button>
@@ -143,23 +151,26 @@ export default function App() {
 
       {/* Main Container */}
       <main className="container py-4" style={{ maxWidth: 960 }}>
-        {/* Render Views Based on Active Tab */}
-        {activeTab === "create-ticket" && (
+        {/* Render Views Based on State */}
+        {selectedTicketId !== null ? (
+          <TicketDetail
+            ticketId={selectedTicketId}
+            currentRequester={currentRequester}
+            onBack={() => setSelectedTicketId(null)}
+          />
+        ) : activeTab === "create-ticket" ? (
           <CreateTicket
             currentRequester={currentRequester}
-            onCancel={() => setActiveTab("my-tickets")}
-            onTicketCreated={() => setActiveTab("my-tickets")}
+            onCancel={() => handleNavigate("my-tickets")}
+            onTicketCreated={(t: Ticket) => setSelectedTicketId(t.id)}
           />
-        )}
-
-        {activeTab === "my-tickets" && (
+        ) : activeTab === "my-tickets" ? (
           <MyTickets
             currentRequester={currentRequester}
-            onCreateNew={() => setActiveTab("create-ticket")}
+            onCreateNew={() => handleNavigate("create-ticket")}
+            onSelectTicket={(t: Ticket) => setSelectedTicketId(t.id)}
           />
-        )}
-
-        {activeTab === "dashboard" && (
+        ) : (
           <>
             {/* Banner showing active requester context */}
             <div
@@ -180,14 +191,14 @@ export default function App() {
                     type="button"
                     className="btn btn-sm px-3 text-white"
                     style={{ backgroundColor: "#006B3C" }}
-                    onClick={() => setActiveTab("my-tickets")}
+                    onClick={() => handleNavigate("my-tickets")}
                   >
                     📋 View My Tickets
                   </button>
                   <button
                     type="button"
                     className="btn btn-sm btn-outline-success px-3"
-                    onClick={() => setActiveTab("create-ticket")}
+                    onClick={() => handleNavigate("create-ticket")}
                   >
                     ➕ New Ticket
                   </button>
