@@ -68,6 +68,7 @@ As part of peer collaboration, @Beethoven190 performed code reviews and executed
 | **@SANOP19** | SANOP19/toktickit | [PR #16](https://github.com/SANOP19/toktickit/pull/16) | Issue 2: Requester Context | **Approved** | @Beethoven190 |
 | **@SANOP19** | SANOP19/toktickit | [PR #17](https://github.com/SANOP19/toktickit/pull/17) | Issue 3: Ticket Creation | **Approved** | @Beethoven190 |
 | **@SANOP19** | SANOP19/toktickit | [PR #18](https://github.com/SANOP19/toktickit/pull/18) | Issue 4: My Tickets Screen | **Approved** | @Beethoven190 |
+| **@SANOP19** | SANOP19/toktickit | [PR #19](https://github.com/SANOP19/toktickit/pull/19) | Issue 5: Ticket Detail & Attachments | **Approved** | @Beethoven190 |
 | **@Sxr1n** | Sxr1n/toktickit | [PR #17](https://github.com/Sxr1n/toktickit/pull/17) | Issue 1: Engineering Contract | **Approved** | @Beethoven190 |
 | **@Sxr1n** | Sxr1n/toktickit | [PR #18](https://github.com/Sxr1n/toktickit/pull/18) | Issue 2: Requester Context | **Approved** | @Beethoven190 |
 | **@FramePongrit** | FramePongrit/toktickit | [PR #11](https://github.com/FramePongrit/toktickit/pull/11) | Issue 1: Engineering Contract | **Approved** | @Beethoven190 |
