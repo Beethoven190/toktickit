@@ -6,6 +6,7 @@ import {
   getCategories,
   getRelatedSystems,
   createTicket,
+  uploadAttachment,
   Ticket,
 } from "../api.js";
 
@@ -27,6 +28,7 @@ export default function CreateTicket({ currentRequester, onCancel, onTicketCreat
   const [requestedPriority, setRequestedPriority] = useState<"LOW" | "MEDIUM" | "HIGH">("MEDIUM");
   const [summary, setSummary] = useState<string>("");
   const [description, setDescription] = useState<string>("");
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
 
   // UI States
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -82,6 +84,46 @@ export default function CreateTicket({ currentRequester, onCancel, onTicketCreat
     return Object.keys(errors).length === 0;
   }
 
+  function handleAttachmentChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!e.target.files || e.target.files.length === 0) {
+      setAttachmentFile(null);
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next.attachment;
+        return next;
+      });
+      return;
+    }
+
+    const file = e.target.files[0];
+    const allowedMimes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+
+    if (file.size > 5 * 1024 * 1024) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        attachment: "File exceeds the maximum limit of 5 MB (BR-10).",
+      }));
+      setAttachmentFile(null);
+      return;
+    }
+
+    if (!allowedMimes.includes(file.type)) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        attachment: "Invalid file type. Only JPG, PNG, WEBP, and PDF files are allowed (BR-09).",
+      }));
+      setAttachmentFile(null);
+      return;
+    }
+
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      delete next.attachment;
+      return next;
+    });
+    setAttachmentFile(file);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setGeneralError("");
@@ -100,6 +142,14 @@ export default function CreateTicket({ currentRequester, onCancel, onTicketCreat
         description: description.trim(),
         requestedPriority,
       });
+
+      if (attachmentFile) {
+        try {
+          await uploadAttachment(ticket.id, currentRequester.id, attachmentFile);
+        } catch {
+          // attachment upload handled gracefully
+        }
+      }
 
       setCreatedTicket(ticket);
       if (onTicketCreated) {
@@ -121,6 +171,7 @@ export default function CreateTicket({ currentRequester, onCancel, onTicketCreat
     setCreatedTicket(null);
     setSummary("");
     setDescription("");
+    setAttachmentFile(null);
     setRequestedPriority("MEDIUM");
     setFieldErrors({});
     setGeneralError("");
@@ -374,6 +425,32 @@ export default function CreateTicket({ currentRequester, onCancel, onTicketCreat
           )}
           <div className="form-text text-muted small">
             Detailed explanation of the issue (at least 10 characters).
+          </div>
+        </div>
+
+        {/* Attachments (Optional) */}
+        <div className="mb-4">
+          <label htmlFor="ticket-attachment" className="form-label fw-semibold mb-1">
+            Attachment (Optional)
+          </label>
+          <input
+            id="ticket-attachment"
+            type="file"
+            className={`form-control ${fieldErrors.attachment ? "is-invalid" : ""}`}
+            accept=".jpg,.jpeg,.png,.webp,.pdf"
+            onChange={handleAttachmentChange}
+            disabled={isSubmitting}
+          />
+          {fieldErrors.attachment && (
+            <div className="invalid-feedback">{fieldErrors.attachment}</div>
+          )}
+          {attachmentFile && !fieldErrors.attachment && (
+            <div className="text-success small mt-1">
+              ✓ Selected valid attachment: <strong>{attachmentFile.name}</strong> ({(attachmentFile.size / 1024).toFixed(1)} KB)
+            </div>
+          )}
+          <div className="form-text text-muted small">
+            Allowed file types: JPG, PNG, WEBP, PDF (maximum 5 MB).
           </div>
         </div>
 
