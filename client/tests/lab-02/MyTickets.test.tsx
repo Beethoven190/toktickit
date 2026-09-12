@@ -82,10 +82,10 @@ describe("MyTickets Component", () => {
     render(<MyTickets currentRequester={mockRequester} onCreateNew={() => {}} />);
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/Search by summary or ticket #/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/Search by ticket number or summary/i)).toBeInTheDocument();
     });
 
-    const searchInput = screen.getByPlaceholderText(/Search by summary or ticket #/i);
+    const searchInput = screen.getByPlaceholderText(/Search by ticket number or summary/i);
     await user.type(searchInput, "Screen");
 
     await waitFor(() => {

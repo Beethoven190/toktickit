@@ -122,6 +122,8 @@ export async function getMyTickets(params: {
   status?: string;
   page?: number;
   limit?: number;
+  sort?: string;
+  order?: string;
 }): Promise<PaginatedTickets> {
   const url = new URL(`${API_URL}/api/tickets`);
   url.searchParams.set("requesterId", String(params.requesterId));
@@ -131,6 +133,8 @@ export async function getMyTickets(params: {
   if (params.status) url.searchParams.set("status", params.status);
   if (params.page) url.searchParams.set("page", String(params.page));
   if (params.limit) url.searchParams.set("limit", String(params.limit));
+  if (params.sort) url.searchParams.set("sort", params.sort);
+  if (params.order) url.searchParams.set("order", params.order);
 
   const res = await fetch(url.toString());
   if (!res.ok) {

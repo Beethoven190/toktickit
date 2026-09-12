@@ -176,11 +176,28 @@ export default function TicketDetail({ ticketId, currentRequester, onBack }: Pro
 
   return (
     <div className="my-4">
-      {/* Top Navigation */}
-      <div className="mb-3">
+      {/* Breadcrumbs + Back Button Row */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <nav aria-label="breadcrumb">
+          <ol className="breadcrumb mb-0 small">
+            <li className="breadcrumb-item">
+              <button
+                type="button"
+                className="btn btn-link p-0 text-decoration-none"
+                style={{ color: "#006B3C" }}
+                onClick={onBack}
+              >
+                My Tickets
+              </button>
+            </li>
+            <li className="breadcrumb-item active text-muted" aria-current="page">
+              Ticket Details
+            </li>
+          </ol>
+        </nav>
         <button
           type="button"
-          className="btn btn-sm btn-outline-secondary px-3"
+          className="btn btn-sm btn-outline-success px-3"
           onClick={onBack}
         >
           ← Back to My Tickets
@@ -196,7 +213,7 @@ export default function TicketDetail({ ticketId, currentRequester, onBack }: Pro
         <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 pb-3 mb-4 border-bottom">
           <div>
             <span className="text-muted small d-block">Official Ticket Number</span>
-            <h1 className="h3 fw-bold text-success font-monospace mb-0" data-testid="ticket-detail-number">
+            <h1 className="h3 fw-bold font-monospace mb-0" style={{ color: "#006B3C" }} data-testid="ticket-detail-number">
               {ticket.ticketNumber}
             </h1>
           </div>
@@ -245,12 +262,40 @@ export default function TicketDetail({ ticketId, currentRequester, onBack }: Pro
           </div>
         </div>
 
-        {/* Attachments Section */}
-        <div className="pt-3 border-top">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h2 className="h5 fw-bold mb-0" style={{ color: "#006B3C" }}>
-              📎 Attachments ({activeAttachments.length}/5 active)
-            </h2>
+        {/* Resolution Summary (read-only) */}
+        <div className="mb-4">
+          <h2 className="h6 fw-bold text-muted text-uppercase mb-2">Resolution Summary</h2>
+          <div
+            className="p-3 rounded border"
+            style={{ backgroundColor: "#FAFAFA", minHeight: 80, color: "#aaa", fontStyle: "italic" }}
+          >
+            No resolution summary available yet.
+          </div>
+        </div>
+
+        {/* Attachments Tab-style Section */}
+        <div className="border-top pt-0">
+          {/* Tab-style header bar */}
+          <div className="d-flex border-bottom mb-3">
+            <div
+              className="px-4 py-2 fw-semibold small d-flex align-items-center gap-2"
+              style={{
+                color: "#006B3C",
+                borderBottom: "2px solid #006B3C",
+                marginBottom: "-1px",
+                cursor: "default",
+                backgroundColor: "#EAF6EF",
+              }}
+            >
+              <span>📎</span>
+              Attachments
+              <span
+                className="badge rounded-pill ms-1"
+                style={{ backgroundColor: "#006B3C", color: "white", fontSize: "0.7rem" }}
+              >
+                {activeAttachments.length}
+              </span>
+            </div>
           </div>
 
           {uploadError && (

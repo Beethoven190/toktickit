@@ -41,8 +41,8 @@ export default function DevelopmentRequesterSelector({ onSelect, onCancel }: Pro
 
   return (
     <div
-      className="d-flex align-items-center justify-content-center min-vh-100"
-      style={{ backgroundColor: "#F5F7F6" }}
+      className="d-flex align-items-center justify-content-center py-5"
+      style={{ minHeight: "70vh" }}
     >
       <div
         className="card shadow-sm border-0 p-4 p-md-5"
@@ -53,7 +53,9 @@ export default function DevelopmentRequesterSelector({ onSelect, onCancel }: Pro
             className="d-inline-flex align-items-center justify-content-center mb-3 rounded-circle"
             style={{ width: 60, height: 60, backgroundColor: "#EAF6EF" }}
           >
-            <span style={{ fontSize: 28 }}>👤</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="#006B3C" viewBox="0 0 16 16">
+              <path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM8 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm.256 7a4.474 4.474 0 0 1-.229-1.004H3c.001-.246.154-.986.832-1.664C4.484 10.68 5.975 10 8 10c.007 0 .013 0 .02.001A4.47 4.47 0 0 1 9 9.102a4.49 4.49 0 0 1 1.659-.34 4.5 4.5 0 0 1 .255.004A3 3 0 0 0 9 7.5a3 3 0 0 0-3 3c0 .34.057.665.16.968a4.459 4.459 0 0 0-.16-.968zM16 12.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0zm-3.5-2a.5.5 0 0 0-.5.5v1h-1a.5.5 0 0 0 0 1h1v1a.5.5 0 0 0 1 0v-1h1a.5.5 0 0 0 0-1h-1v-1a.5.5 0 0 0-.5-.5z"/>
+            </svg>
           </div>
           <h1 className="h4 fw-bold" style={{ color: "#006B3C" }}>
             Select Development Requester
@@ -102,23 +104,31 @@ export default function DevelopmentRequesterSelector({ onSelect, onCancel }: Pro
                   </option>
                 ))}
               </select>
-              <div className="form-text mt-2 text-muted small">
-                ℹ️ Only active development requesters are shown. Inactive accounts are excluded.
+              {/* Info box: active requesters only */}
+              <div
+                className="d-flex align-items-center gap-2 mt-2 px-3 py-2 rounded small"
+                style={{ backgroundColor: "#EAF6EF", border: "1px solid #B2D8C4", color: "#1B6840" }}
+              >
+                <span>ℹ️</span>
+                <span>Only active development requesters are shown.</span>
               </div>
             </div>
 
+            {/* Authentication coming in Lab 3 notice */}
             <div
-              className="p-3 mb-4 rounded"
-              style={{ backgroundColor: "#EAF6EF", border: "1px solid #D2DDD7" }}
+              className="p-3 mb-4 rounded d-flex align-items-start gap-2"
+              style={{ backgroundColor: "#F5F5F5", border: "1px solid #DEDEDE" }}
             >
-              <div className="d-flex align-items-start">
-                <span className="me-2">🛡️</span>
-                <small className="text-muted">
-                  <strong>Authentication coming in Lab 3:</strong> In Lab 3, this selection will be
-                  replaced with secure authentication so you can access the system with your own
-                  account.
-                </small>
-              </div>
+              <span className="mt-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#888" viewBox="0 0 16 16">
+                  <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+                </svg>
+              </span>
+              <small className="text-muted">
+                <strong>Authentication coming in Lab 3:</strong> In Lab 3, this selection will be
+                replaced with secure authentication so you can access the system with your own
+                account.
+              </small>
             </div>
 
             <div className="d-flex justify-content-end gap-2">
@@ -133,10 +143,10 @@ export default function DevelopmentRequesterSelector({ onSelect, onCancel }: Pro
               )}
               <button
                 type="submit"
-                className="btn px-4 text-white"
+                className="btn px-4 text-white d-flex align-items-center gap-2"
                 style={{ backgroundColor: "#006B3C" }}
               >
-                → Continue
+                Continue →
               </button>
             </div>
           </form>
