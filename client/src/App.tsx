@@ -7,6 +7,7 @@ import CreateTicket from "./components/CreateTicket.js";
 import MyTickets from "./components/MyTickets.js";
 import TicketDetail from "./components/TicketDetail.js";
 import StaffTicketQueue from "./components/StaffTicketQueue.js";
+import { StaffTicketDetail } from "./components/StaffTicketDetail.js";
 
 type UiState = "idle" | "loading" | "success" | "error";
 
@@ -357,11 +358,19 @@ function AppContent() {
             )}
           </div>
         ) : selectedTicketId !== null ? (
-          <TicketDetail
-            ticketId={selectedTicketId}
-            currentRequester={currentRequester}
-            onBack={() => setSelectedTicketId(null)}
-          />
+          (user.role === "STAFF" || user.role === "ADMIN") && activeTab === "queue" ? (
+            <StaffTicketDetail
+              ticketId={selectedTicketId}
+              currentUserId={user.id}
+              onBack={() => setSelectedTicketId(null)}
+            />
+          ) : (
+            <TicketDetail
+              ticketId={selectedTicketId}
+              currentRequester={currentRequester}
+              onBack={() => setSelectedTicketId(null)}
+            />
+          )
         ) : activeTab === "create-ticket" ? (
           <CreateTicket
             currentRequester={currentRequester}

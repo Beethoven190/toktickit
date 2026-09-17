@@ -324,12 +324,26 @@ export async function changePasswordApi(
 // ---------------------------------------------------------------------------
 // Lab 3 — Issue 3: IT Staff Ticket Queue API
 // ---------------------------------------------------------------------------
+export interface TicketComment {
+  id: number;
+  ticketId: number;
+  content: string;
+  createdAt: string;
+  author?: {
+    id: number;
+    name: string;
+    role: string;
+  };
+}
+
 export interface StaffQueueTicket extends Ticket {
   ownerId?: number | null;
   owner?: RequesterUser | null;
   itPriority?: "LOW" | "MEDIUM" | "HIGH" | null;
   resolutionSummary?: string | null;
   problemResolvedReq?: boolean;
+  publicComments?: TicketComment[];
+  internalNotes?: TicketComment[];
 }
 
 export interface StaffQueueParams {
@@ -412,5 +426,113 @@ export async function getStaffTicketDetail(ticketId: number): Promise<StaffQueue
 
   return data;
 }
+
+// ---------------------------------------------------------------------------
+// Lab 3 — Issue 4: IT Staff Ticket Operations API
+// ---------------------------------------------------------------------------
+export interface StaffAssignee {
+  id: number;
+  name: string;
+  email: string;
+  role: "STAFF" | "ADMIN";
+}
+
+export async function getStaffAssignees(): Promise<StaffAssignee[]> {
+  const res = await fetch(`${API_URL}/api/staff/assignees`, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to fetch staff assignees: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export async function claimStaffTicket(ticketId: number): Promise<StaffQueueTicket> {
+  const res = await fetch(`${API_URL}/api/staff/tickets/${ticketId}/claim`, {
+    method: "PATCH",
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to claim ticket: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export async function assignStaffTicket(ticketId: number, ownerId: number | null): Promise<StaffQueueTicket> {
+  const res = await fetch(`${API_URL}/api/staff/tickets/${ticketId}/assign`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ ownerId }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to assign ticket: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export async function updateStaffTicketPriority(
+  ticketId: number,
+  itPriority: "LOW" | "MEDIUM" | "HIGH"
+): Promise<StaffQueueTicket> {
+  const res = await fetch(`${API_URL}/api/staff/tickets/${ticketId}/priority`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ itPriority }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to update IT priority: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export async function updateStaffTicketStatus(
+  ticketId: number,
+  status: string,
+  resolutionSummary?: string
+): Promise<StaffQueueTicket> {
+  const res = await fetch(`${API_URL}/api/staff/tickets/${ticketId}/status`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ status, resolutionSummary }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to update ticket status: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
 
 
