@@ -25,7 +25,8 @@ Throughout the Lab 3 sprint, our team strictly enforces the engineering workflow
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Issue 1** | `feature/lab3-1-spec-contract` | #23 | [PR #23](https://github.com/Beethoven190/toktickit/pull/23) | @SANOP19 | **Approved** | @SANOP19 | `54cd8ff` |
 | **Issue 2** | `feature/lab3-2-auth-foundation` | #25 | [PR #25](https://github.com/Beethoven190/toktickit/pull/25) | @SANOP19 | **Approved** | @SANOP19 | `a4c5f7d` |
-| **Issue 3** | `feature/lab3-3-staff-queue` | TBD | Pending PR | @SANOP19 | In Progress | @SANOP19 | TBD |
+| **Issue 3** | `feature/lab3-3-staff-queue` | #27 | [PR #27](https://github.com/Beethoven190/toktickit/pull/27) | @SANOP19 | **Approved** | @SANOP19 | `8d79c2a` |
+| **Issue 4** | `feature/lab3-4-staff-operations` | TBD | Pending PR | @SANOP19 | In Progress | @SANOP19 | TBD |
 
 ### Detailed Evaluation of Author PRs:
 
@@ -63,6 +64,20 @@ Throughout the Lab 3 sprint, our team strictly enforces the engineering workflow
 - **Author Response (@Beethoven190):** Acknowledged and verified.
 - **Outcome:** Approved and merged into `lab3-staging` by @SANOP19 (commit `a4c5f7d`).
 
+#### PR #27 (Issue 3: IT Staff Ticket Queue & RBAC)
+- **PR URL:** [https://github.com/Beethoven190/toktickit/pull/27](https://github.com/Beethoven190/toktickit/pull/27)
+- **Author Summary:** Implemented IT Staff Ticket Queue (`GET /api/staff/queue` & `GET /api/staff/tickets/:id`) with multi-criteria search, category/system/priority/status/owner filters, sorting arrows, numeric pagination, and quick KPI metrics pills. Delivered `StaffTicketQueue.tsx` aligning strictly with Teacher Mockup 2, supporting responsive desktop table and mobile card views, Zen Green badges, and 100% test continuity (85 passing tests: 55 server + 30 client).
+- **Reviewer Evaluation (@SANOP19):**
+  > "Summary & Highlights:
+  > - **API & RBAC Enforcement:** `GET /api/staff/queue` and `GET /api/staff/tickets/:id` strictly enforce authentication and role guards (`STAFF` or `ADMIN`). Unauthorized requesters are safely blocked with 403 Forbidden.
+  > - **Queue Capabilities:** Multi-criteria filtering, search by ticket number or summary, dynamic column sorting, and numeric pagination work accurately. Summary counts provide real-time KPI metrics.
+  > - **Frontend Polish:** `StaffTicketQueue.tsx` matches Teacher Mockup 2 beautifully with Zen Green tokens, dual responsive views (desktop table + mobile card), and clear empty states.
+  > - **Test Coverage:** 20 new backend tests and 7 frontend tests, preserving 100% pass rate with zero regression.
+  > 
+  > APPROVE @Beethoven190"
+- **Author Response (@Beethoven190):** Thank you @SANOP19 for the review and merge!
+- **Outcome:** Approved and merged into `lab3-staging` by @SANOP19 (commit `8d79c2a`).
+
 ---
 
 ## 3. PRs Reviewed & Merged by @Beethoven190 (As Reviewer)
@@ -72,6 +87,8 @@ As part of peer collaboration, @Beethoven190 performs code reviews and executes 
 | Author | Repository | PR # | Issue Reviewed | Review Decision | Merged By | Merge Commit |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **@SANOP19** | SANOP19/toktickit | [PR #22](https://github.com/SANOP19/toktickit/pull/22) | Issue 1: Sprint 3 Engineering Contract Documentation | **Approved** | @Beethoven190 | `7bfa69b` |
+| **@SANOP19** | SANOP19/toktickit | [PR #25](https://github.com/SANOP19/toktickit/pull/25) | Issue 2: Authentication Foundation & User Migration | **Approved** | @Beethoven190 | In progress |
+| **@pimchayasupr-hash** | pimchayasupr-hash/toktickit | [PR #36](https://github.com/pimchayasupr-hash/toktickit/pull/36) | Lab 3 Full Stack Implementation & Integration | **Reviewed** | Collaborative | In progress |
 
 ---
 
