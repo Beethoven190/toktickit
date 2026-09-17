@@ -72,6 +72,10 @@ export interface Ticket {
   category?: Category;
   relatedSystem?: RelatedSystem;
   requester?: RequesterUser;
+  problemResolvedReq?: boolean;
+  resolutionSummary?: string | null;
+  publicComments?: TicketComment[];
+  internalNotes?: TicketComment[];
   attachments?: Attachment[];
 }
 
@@ -327,6 +331,7 @@ export async function changePasswordApi(
 export interface TicketComment {
   id: number;
   ticketId: number;
+  authorId?: number;
   content: string;
   createdAt: string;
   author?: {
@@ -533,6 +538,100 @@ export async function updateStaffTicketStatus(
 
   return data;
 }
+
+// ---------------------------------------------------------------------------
+// Lab 3 — Issue 5: Collaboration (Comments, Notes, Problem Resolution) API
+// ---------------------------------------------------------------------------
+export async function getTicketComments(ticketId: number, requesterId?: number): Promise<TicketComment[]> {
+  const query = requesterId ? `?requesterId=${requesterId}` : "";
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/comments${query}`, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to fetch comments: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export async function addTicketComment(ticketId: number, content: string, requesterId?: number): Promise<TicketComment> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/comments`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ content, requesterId }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to post comment: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export async function getTicketInternalNotes(ticketId: number): Promise<TicketComment[]> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/notes`, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to fetch internal notes: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export async function addTicketInternalNote(ticketId: number, content: string): Promise<TicketComment> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/notes`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ content }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to post internal note: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export async function toggleProblemResolved(ticketId: number, isResolved: boolean = true, requesterId?: number): Promise<Ticket> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/resolve-indication`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ isResolved, requesterId }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to update resolution indication: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
 
 
 
