@@ -27,7 +27,7 @@ Throughout the Lab 3 sprint, our team strictly enforces the engineering workflow
 | **Issue 2** | `feature/lab3-2-auth-foundation` | #25 | [PR #25](https://github.com/Beethoven190/toktickit/pull/25) | @SANOP19 | **Approved** | @SANOP19 | `a4c5f7d` |
 | **Issue 3** | `feature/lab3-3-staff-queue` | #27 | [PR #27](https://github.com/Beethoven190/toktickit/pull/27) | @SANOP19 | **Approved** | @SANOP19 | `8d79c2a` |
 | **Issue 4** | `feature/lab3-4-staff-operations` | #29 | [PR #29](https://github.com/Beethoven190/toktickit/pull/29) | @SANOP19 | **Approved** | @SANOP19 | `bd05a74` |
-| **Issue 5** | `feature/lab3-5-comments-notes` | TBD | Pending PR | @SANOP19 | In Progress | @SANOP19 | TBD |
+| **Issue 5** | `feature/lab3-5-comments-notes` | #31 | [PR #31](https://github.com/Beethoven190/toktickit/pull/31) | @SANOP19 | Under Review | @SANOP19 | Pending Review |
 
 ### Detailed Evaluation of Author PRs:
 
@@ -92,6 +92,18 @@ Throughout the Lab 3 sprint, our team strictly enforces the engineering workflow
   > APPROVE @Beethoven190"
 - **Author Response (@Beethoven190):** Thank you @SANOP19 for reviewing and merging!
 - **Outcome:** Approved and merged into `lab3-staging` by @SANOP19 (commit `bd05a74`).
+
+#### PR #31 (Issue 5: Collaboration — Public Comments, Confidential Internal Notes, and Problem Resolution)
+- **PR URL:** [https://github.com/Beethoven190/toktickit/pull/31](https://github.com/Beethoven190/toktickit/pull/31)
+- **Author Summary:** Implemented bidirectional collaboration features between Requesters and IT Staff/Admin:
+  - **Public Comments (`GET/POST /api/tickets/:id/comments`):** Validates 1–2,000 characters, append-only without edits/deletes (BR-06), strictly isolates cross-requester access (403 Forbidden).
+  - **Confidential Internal Notes (`GET/POST /api/tickets/:id/notes`):** Strictly restricted to `STAFF` and `ADMIN` (AC-14), returning 403 Forbidden for `REQUESTER` without exposing metadata.
+  - **Problem Appears Resolved (`POST/PATCH /api/tickets/:id/resolve-indication`):** Allows ticket requester to toggle `problemResolvedReq: true/false` without altering official ticket status (BR-07).
+  - **Frontend UI & Badge Integration:** Added interactive comments thread and notes tab in `StaffTicketDetail.tsx`, comments thread and resolution toggle in `TicketDetail.tsx`, and `✓ Resolved` badge in `MyTickets.tsx`.
+  - **Automated Tests:** 135 passing tests (92 backend + 43 frontend, 100% pass rate with zero regression).
+- **Reviewer Evaluation (@SANOP19):** Pending review
+- **Author Response (@Beethoven190):** Pending review
+- **Outcome:** Submitted for review and merge into `lab3-staging` by @SANOP19.
 
 ---
 
