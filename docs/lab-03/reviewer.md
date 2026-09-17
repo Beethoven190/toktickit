@@ -24,6 +24,8 @@ Throughout the Lab 3 sprint, our team strictly enforces the engineering workflow
 | Issue # | Branch Name | PR # | PR Link | Reviewer | Decision | Merged By | Merge Commit |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Issue 1** | `feature/lab3-1-spec-contract` | #23 | [PR #23](https://github.com/Beethoven190/toktickit/pull/23) | @SANOP19 | **Approved** | @SANOP19 | `54cd8ff` |
+| **Issue 2** | `feature/lab3-2-auth-foundation` | #25 | [PR #25](https://github.com/Beethoven190/toktickit/pull/25) | @SANOP19 | **Approved** | @SANOP19 | `a4c5f7d` |
+| **Issue 3** | `feature/lab3-3-staff-queue` | TBD | Pending PR | @SANOP19 | In Progress | @SANOP19 | TBD |
 
 ### Detailed Evaluation of Author PRs:
 
@@ -46,15 +48,30 @@ Throughout the Lab 3 sprint, our team strictly enforces the engineering workflow
 - **Author Response (@Beethoven190):** "Thanks @SANOP19"
 - **Outcome:** Approved and merged into `lab3-staging` by @SANOP19 (commit `54cd8ff`).
 
+#### PR #25 (Issue 2: Authentication Foundation, User Migration & Password Change)
+- **PR URL:** [https://github.com/Beethoven190/toktickit/pull/25](https://github.com/Beethoven190/toktickit/pull/25)
+- **Author Summary:** Implemented database evolution from `RequesterUser` to unified `User` model with `Role` enum (`REQUESTER`, `STAFF`, `ADMIN`), added `Ticket.ownerId`, `itPriority`, and models `PublicComment`, `InternalNote`. Delivered JWT auth middleware, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`, `/api/auth/change-password` with complexity validation, server-side ownership enforcement overriding client `requesterId` (BR-03, AC-03), Zen Green `LoginForm`, `ChangePasswordModal` with live checklist, and 58 passing tests.
+- **Reviewer Evaluation (@SANOP19):**
+  > "Summary & Highlights:
+  > - **Database & Migration:** Clean evolution from `RequesterUser` to unified `User` model with `Role` enum, preserving existing relationships and adding support for Lab 3 ticket workflow (`ownerId`, `itPriority`, `PublicComment`, `InternalNote`).
+  > - **Security & RBAC:** Robust JWT authentication and bcrypt hashing. Inactive accounts are properly rejected (BR-01), token revocation on logout works seamlessly, and first-login password quarantine strictly enforces mandatory change before system entry (BR-02, AC-02).
+  > - **Server-Side Ownership Enforcement:** Verified that forged `requesterId` values in both `POST /api/tickets` body and `GET /api/tickets` query params are strictly overridden by the authenticated token identity (BR-03, AC-03).
+  > - **Frontend UX & Zen Green Design:** Beautiful `LoginForm` with demo account quick-fill and busy states. The `ChangePasswordModal` live complexity checklist provides great user feedback while adhering to Zen Green design tokens.
+  > - **Test Coverage:** Comprehensive test suites across backend and frontend (58/58 tests passing). All Acceptance Criteria (AC-01 to AC-03) and Business Rules are well-verified.
+  > 
+  > APPROVE @Beethoven190"
+- **Author Response (@Beethoven190):** Acknowledged and verified.
+- **Outcome:** Approved and merged into `lab3-staging` by @SANOP19 (commit `a4c5f7d`).
+
 ---
 
 ## 3. PRs Reviewed & Merged by @Beethoven190 (As Reviewer)
 
-*Peer repository reviews for Lab 3 will be recorded here as peer PRs are submitted.*
+As part of peer collaboration, @Beethoven190 performs code reviews and executes merges for peer repositories:
 
-| Author | Repository | PR # | Issue Reviewed | Review Decision | Merged By |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| *TBD* | *TBD* | - | - | - | - |
+| Author | Repository | PR # | Issue Reviewed | Review Decision | Merged By | Merge Commit |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **@SANOP19** | SANOP19/toktickit | [PR #22](https://github.com/SANOP19/toktickit/pull/22) | Issue 1: Sprint 3 Engineering Contract Documentation | **Approved** | @Beethoven190 | `7bfa69b` |
 
 ---
 

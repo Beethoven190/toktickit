@@ -6,6 +6,7 @@ import ChangePasswordModal from "./components/ChangePasswordModal.js";
 import CreateTicket from "./components/CreateTicket.js";
 import MyTickets from "./components/MyTickets.js";
 import TicketDetail from "./components/TicketDetail.js";
+import StaffTicketQueue from "./components/StaffTicketQueue.js";
 
 type UiState = "idle" | "loading" | "success" | "error";
 
@@ -165,7 +166,7 @@ function AppContent() {
                     style={{ textDecoration: "none" }}
                     onClick={() => handleNavigate("queue")}
                   >
-                    🛠️ Ticket Queue
+                    📄 My Queue
                   </button>
                 </li>
               )}
@@ -368,10 +369,7 @@ function AppContent() {
             onTicketCreated={(t: Ticket) => setSelectedTicketId(t.id)}
           />
         ) : activeTab === "queue" ? (
-          <div className="card border-0 shadow-sm p-4" style={{ borderRadius: 12 }}>
-            <h2 className="h4 fw-bold" style={{ color: "#006B3C" }}>🛠️ IT Staff Ticket Queue</h2>
-            <p className="text-muted">Queue interface will be connected in Issue 3.</p>
-          </div>
+          <StaffTicketQueue onSelectTicket={(t) => setSelectedTicketId(t.id)} />
         ) : activeTab === "admin-users" ? (
           <div className="card border-0 shadow-sm p-4" style={{ borderRadius: 12 }}>
             <h2 className="h4 fw-bold" style={{ color: "#006B3C" }}>⚙️ User Management</h2>
