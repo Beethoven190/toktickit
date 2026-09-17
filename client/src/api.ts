@@ -1,5 +1,33 @@
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
+export type UserRole = "REQUESTER" | "STAFF" | "ADMIN";
+
+export interface AuthUser {
+  id: number;
+  name: string;
+  email: string;
+  role: UserRole;
+  mustChangePassword: boolean;
+  isActive: boolean;
+}
+
+export function getAuthToken(): string | null {
+  return localStorage.getItem("toktickit_token");
+}
+
+export function setAuthToken(token: string | null): void {
+  if (token) {
+    localStorage.setItem("toktickit_token", token);
+  } else {
+    localStorage.removeItem("toktickit_token");
+  }
+}
+
+export function getAuthHeaders(): Record<string, string> {
+  const token = getAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export interface Category {
   id: number;
   name: string;
@@ -215,3 +243,81 @@ export async function checkSystem(): Promise<SystemStatus> {
     categories,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Lab 3: Authentication API Functions
+// ---------------------------------------------------------------------------
+export async function loginApi(email: string, password: string): Promise<{ token: string; user: AuthUser }> {
+  const res = await fetch(`${API_URL}/api/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || "Login failed";
+    const error = new Error(message);
+    (error as unknown as { fields?: Record<string, string> }).fields = data.error?.fields;
+    throw error;
+  }
+
+  setAuthToken(data.token);
+  return data;
+}
+
+export async function logoutApi(): Promise<void> {
+  try {
+    await fetch(`${API_URL}/api/auth/logout`, {
+      method: "POST",
+      headers: {
+        ...getAuthHeaders(),
+      },
+    });
+  } finally {
+    setAuthToken(null);
+  }
+}
+
+export async function getMeApi(): Promise<AuthUser> {
+  const res = await fetch(`${API_URL}/api/auth/me`, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+
+  if (!res.ok) {
+    setAuthToken(null);
+    throw new Error("Session expired or invalid token");
+  }
+
+  const data = await res.json();
+  return data.user;
+}
+
+export async function changePasswordApi(
+  currentPassword: string,
+  newPassword: string
+): Promise<{ message: string; user: AuthUser }> {
+  const res = await fetch(`${API_URL}/api/auth/change-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || "Failed to change password";
+    const error = new Error(message);
+    (error as unknown as { fields?: Record<string, string> }).fields = data.error?.fields;
+    throw error;
+  }
+
+  return data;
+}
+
