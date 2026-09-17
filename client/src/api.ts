@@ -321,3 +321,96 @@ export async function changePasswordApi(
   return data;
 }
 
+// ---------------------------------------------------------------------------
+// Lab 3 — Issue 3: IT Staff Ticket Queue API
+// ---------------------------------------------------------------------------
+export interface StaffQueueTicket extends Ticket {
+  ownerId?: number | null;
+  owner?: RequesterUser | null;
+  itPriority?: "LOW" | "MEDIUM" | "HIGH" | null;
+  resolutionSummary?: string | null;
+  problemResolvedReq?: boolean;
+}
+
+export interface StaffQueueParams {
+  search?: string;
+  categoryId?: string;
+  relatedSystemId?: string;
+  priority?: string;
+  requestedPriority?: string;
+  itPriority?: string;
+  status?: string;
+  ownerId?: string;
+  quickFilter?: string;
+  sort?: string;
+  order?: "asc" | "desc";
+  page?: number;
+  limit?: number;
+  pageSize?: number;
+}
+
+export interface StaffQueueResponse {
+  data: StaffQueueTicket[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  summaryCounts: {
+    all: number;
+    unassigned: number;
+    myTickets: number;
+    inProgress: number;
+  };
+}
+
+export async function getStaffQueue(params: StaffQueueParams = {}): Promise<StaffQueueResponse> {
+  const url = new URL(`${API_URL}/api/staff/queue`);
+  if (params.search) url.searchParams.set("search", params.search);
+  if (params.categoryId) url.searchParams.set("categoryId", params.categoryId);
+  if (params.relatedSystemId) url.searchParams.set("relatedSystemId", params.relatedSystemId);
+  if (params.priority) url.searchParams.set("priority", params.priority);
+  if (params.requestedPriority) url.searchParams.set("requestedPriority", params.requestedPriority);
+  if (params.itPriority) url.searchParams.set("itPriority", params.itPriority);
+  if (params.status) url.searchParams.set("status", params.status);
+  if (params.ownerId !== undefined && params.ownerId !== "") url.searchParams.set("ownerId", params.ownerId);
+  if (params.quickFilter) url.searchParams.set("quickFilter", params.quickFilter);
+  if (params.sort) url.searchParams.set("sort", params.sort);
+  if (params.order) url.searchParams.set("order", params.order);
+  if (params.page) url.searchParams.set("page", String(params.page));
+  if (params.limit) url.searchParams.set("limit", String(params.limit));
+  if (params.pageSize) url.searchParams.set("pageSize", String(params.pageSize));
+
+  const res = await fetch(url.toString(), {
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to fetch staff queue: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export async function getStaffTicketDetail(ticketId: number): Promise<StaffQueueTicket> {
+  const res = await fetch(`${API_URL}/api/staff/tickets/${ticketId}`, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to fetch ticket detail: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+
