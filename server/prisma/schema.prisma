@@ -21,19 +21,32 @@ model Category {
 }
 
 // ---------------------------------------------------------------------------
-// Issue 2 (Lab 2) — Development Requester Context
+// Issue 2 (Lab 3) — Real User Model & Role-Based Access Control
 // ---------------------------------------------------------------------------
-model RequesterUser {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  tickets   Ticket[]
+enum Role {
+  REQUESTER
+  STAFF
+  ADMIN
+}
+
+model User {
+  id                 Int             @id @default(autoincrement())
+  name               String
+  email              String          @unique
+  passwordHash       String
+  role               Role            @default(REQUESTER)
+  mustChangePassword Boolean         @default(false)
+  isActive           Boolean         @default(true)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  requestedTickets   Ticket[]        @relation("TicketRequester")
+  ownedTickets       Ticket[]        @relation("TicketOwner")
+  publicComments     PublicComment[]
+  internalNotes      InternalNote[]
 }
 
 // ---------------------------------------------------------------------------
-// Issue 3 (Lab 2) — Related Systems & Tickets
+// Issue 3 (Lab 2) & Issue 3 (Lab 3) — Related Systems & Tickets
 // ---------------------------------------------------------------------------
 model RelatedSystem {
   id        Int      @id @default(autoincrement())
@@ -53,26 +66,36 @@ enum TicketStatus {
   OPEN
   IN_PROGRESS
   PENDING
+  WAITING_FOR_REQUESTER
   RESOLVED
   CLOSED
+  REOPENED
+  CANCELLED
 }
 
 model Ticket {
-  id                Int           @id @default(autoincrement())
-  ticketNumber      String        @unique
-  requesterId       Int
-  requester         RequesterUser @relation(fields: [requesterId], references: [id])
-  categoryId        Int
-  category          Category      @relation(fields: [categoryId], references: [id])
-  relatedSystemId   Int
-  relatedSystem     RelatedSystem @relation(fields: [relatedSystemId], references: [id])
-  summary           String
-  description       String
-  requestedPriority Priority      @default(MEDIUM)
-  currentStatus     TicketStatus  @default(NEW)
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  attachments       Attachment[]
+  id                 Int             @id @default(autoincrement())
+  ticketNumber       String          @unique
+  requesterId        Int
+  requester          User            @relation("TicketRequester", fields: [requesterId], references: [id])
+  ownerId            Int?
+  owner              User?           @relation("TicketOwner", fields: [ownerId], references: [id])
+  categoryId         Int
+  category           Category        @relation(fields: [categoryId], references: [id])
+  relatedSystemId    Int
+  relatedSystem      RelatedSystem   @relation(fields: [relatedSystemId], references: [id])
+  summary            String
+  description        String
+  requestedPriority  Priority        @default(MEDIUM)
+  itPriority         Priority?
+  currentStatus      TicketStatus    @default(NEW)
+  resolutionSummary  String?
+  problemResolvedReq Boolean         @default(false)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  attachments        Attachment[]
+  publicComments     PublicComment[]
+  internalNotes      InternalNote[]
 }
 
 // ---------------------------------------------------------------------------
@@ -90,4 +113,27 @@ model Attachment {
   removalReason String?
   removedAt     DateTime?
   createdAt     DateTime  @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Issue 4 (Lab 3) — Public Comments and Internal Notes
+// ---------------------------------------------------------------------------
+model PublicComment {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model InternalNote {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
 }
