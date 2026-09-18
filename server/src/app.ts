@@ -6,6 +6,7 @@ import fs from "node:fs";
 import { getPrisma } from "./prisma.js";
 import { authRouter } from "./routes/auth.js";
 import { staffRouter } from "./routes/staff.js";
+import { adminRouter } from "./routes/admin.js";
 import { optionalAuthenticate } from "./middleware/auth.js";
 
 // The Express app is exported separately from app.listen() (see index.ts) so
@@ -16,9 +17,10 @@ app.use(cors());          // already wired: lets the Vite dev server call this A
 app.use(express.json());
 app.use(optionalAuthenticate); // Populates req.user if Bearer token present
 
-// Mount Authentication & Staff Routers
+// Mount Authentication, Staff, and Administrator Routers
 app.use("/api/auth", authRouter);
 app.use("/api/staff", staffRouter);
+app.use("/api/admin", adminRouter);
 
 // ---------------------------------------------------------------------------
 // Multer Storage & Validation for Attachments (BR-09, BR-10)
