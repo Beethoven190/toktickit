@@ -126,9 +126,10 @@ As part of peer collaboration, @Beethoven190 performs code reviews and executes 
 | **@SANOP19** | SANOP19/toktickit | [PR #25](https://github.com/SANOP19/toktickit/pull/25) | Issue 2: Authentication Foundation & User Migration | **Approved** | @Beethoven190 | Merged |
 | **@SANOP19** | SANOP19/toktickit | [PR #27](https://github.com/SANOP19/toktickit/pull/27) | Issue 3: Requester Continuation & Public Comments | **Approved** | @Beethoven190 | Merged |
 | **@SANOP19** | SANOP19/toktickit | [PR #29](https://github.com/SANOP19/toktickit/pull/29) | Issue 4: IT Staff Ticket Queue, Filters & Responsive UI | **Approved** | @Beethoven190 | Merged |
-| **@SANOP19** | SANOP19/toktickit | [PR #31](https://github.com/SANOP19/toktickit/pull/31) | Issue 5: IT Staff Ticket Detail, Operational Controls & Internal Notes | **Approved** | @Beethoven190 | Pending Merge |
+| **@SANOP19** | SANOP19/toktickit | [PR #31](https://github.com/SANOP19/toktickit/pull/31) | Issue 5: IT Staff Ticket Detail, Operational Controls & Internal Notes | **Approved** | @Beethoven190 | `6e8a011` |
+| **@SANOP19** | SANOP19/toktickit | [PR #33](https://github.com/SANOP19/toktickit/pull/33) | Issue 6: Administrator User Management, Account Provisioning & Safety Controls | **Approved** | @Beethoven190 | Pending Merge |
 | **@pimchayasupr-hash** | pimchayasupr-hash/toktickit | [PR #36](https://github.com/pimchayasupr-hash/toktickit/pull/36) | Lab 3 Full Stack Implementation & Integration | **Reviewed** | Collaborative | In progress |
-| **@FramePongrit** | FramePongrit/toktickit | [PR #64](https://github.com/FramePongrit/toktickit/pull/64) | Issue 1: Sprint 3 Engineering Contract & Traceability | **Approved** | @Beethoven190 | Pending Merge |
+| **@FramePongrit** | FramePongrit/toktickit | [PR #64](https://github.com/FramePongrit/toktickit/pull/64) | Issue 1: Sprint 3 Engineering Contract & Traceability | **Approved** | @Beethoven190 | `313d4ef` |
 
 ---
 
