@@ -429,7 +429,20 @@ export default function MyTickets({ currentRequester, onCreateNew, onSelectTicke
                       </span>
                     </td>
                     <td>{getPriorityBadge(t.requestedPriority)}</td>
-                    <td>{getStatusBadge(t.currentStatus)}</td>
+                    <td>
+                      <div className="d-flex align-items-center gap-1 flex-wrap">
+                        {getStatusBadge(t.currentStatus)}
+                        {t.problemResolvedReq && (
+                          <span
+                            className="badge bg-success-subtle text-success border border-success-subtle"
+                            data-testid={`resolved-badge-${t.id}`}
+                            title="Requester indicated problem appears resolved"
+                          >
+                            ✓ Resolved
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="text-muted small">{formatDate(t.updatedAt || t.createdAt)}</td>
                   </tr>
                 ))}
@@ -448,8 +461,16 @@ export default function MyTickets({ currentRequester, onCreateNew, onSelectTicke
               >
                 <div className="d-flex justify-content-between align-items-center mb-2">
                   <span className="fw-bold font-monospace" style={{ color: "#006B3C" }}>{t.ticketNumber}</span>
-                  <div className="d-flex gap-1">
+                  <div className="d-flex gap-1 flex-wrap align-items-center">
                     {getPriorityBadge(t.requestedPriority)} {getStatusBadge(t.currentStatus)}
+                    {t.problemResolvedReq && (
+                      <span
+                        className="badge bg-success-subtle text-success border border-success-subtle"
+                        data-testid={`mobile-resolved-badge-${t.id}`}
+                      >
+                        ✓ Resolved
+                      </span>
+                    )}
                   </div>
                 </div>
                 <h3 className="h6 fw-bold mb-1">{t.summary}</h3>

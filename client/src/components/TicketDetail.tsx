@@ -3,10 +3,14 @@ import {
   Ticket,
   Attachment,
   RequesterUser,
+  TicketComment,
   getTicketDetail,
   uploadAttachment,
   getAttachmentDownloadUrl,
   softRemoveAttachment,
+  getTicketComments,
+  addTicketComment,
+  toggleProblemResolved,
 } from "../api.js";
 
 interface Props {
@@ -30,6 +34,17 @@ export default function TicketDetail({ ticketId, currentRequester, onBack }: Pro
   const [removalError, setRemovalError] = useState<string>("");
   const [isRemoving, setIsRemoving] = useState<boolean>(false);
 
+  // Comments state (FR-13, BR-05, BR-06)
+  const [comments, setComments] = useState<TicketComment[]>([]);
+  const [loadingComments, setLoadingComments] = useState<boolean>(false);
+  const [commentContent, setCommentContent] = useState<string>("");
+  const [postingComment, setPostingComment] = useState<boolean>(false);
+  const [commentError, setCommentError] = useState<string>("");
+
+  // Problem Resolved state (BR-07)
+  const [isTogglingResolved, setIsTogglingResolved] = useState<boolean>(false);
+  const [resolveError, setResolveError] = useState<string>("");
+
   async function loadTicket() {
     setLoading(true);
     setError("");
@@ -43,9 +58,58 @@ export default function TicketDetail({ ticketId, currentRequester, onBack }: Pro
     }
   }
 
+  async function loadComments() {
+    setLoadingComments(true);
+    try {
+      const data = await getTicketComments(ticketId, currentRequester.id);
+      setComments(data);
+    } catch {
+      // Non-blocking
+    } finally {
+      setLoadingComments(false);
+    }
+  }
+
   useEffect(() => {
     loadTicket();
+    loadComments();
   }, [ticketId, currentRequester.id]);
+
+  async function handleToggleResolved() {
+    if (!ticket) return;
+    setIsTogglingResolved(true);
+    setResolveError("");
+    try {
+      const nextResolvedState = !ticket.problemResolvedReq;
+      const updated = await toggleProblemResolved(ticket.id, nextResolvedState, currentRequester.id);
+      setTicket((prev) => (prev ? { ...prev, problemResolvedReq: updated.problemResolvedReq } : null));
+    } catch (err: unknown) {
+      setResolveError((err as Error).message || "Failed to update problem resolution status");
+    } finally {
+      setIsTogglingResolved(false);
+    }
+  }
+
+  async function handlePostComment(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = commentContent.trim();
+    if (!trimmed) return;
+    if (trimmed.length > 2000) {
+      setCommentError("Comment cannot exceed 2,000 characters.");
+      return;
+    }
+    setPostingComment(true);
+    setCommentError("");
+    try {
+      const created = await addTicketComment(ticketId, trimmed, currentRequester.id);
+      setComments((prev) => [...prev, created]);
+      setCommentContent("");
+    } catch (err: unknown) {
+      setCommentError((err as Error).message || "Failed to post comment");
+    } finally {
+      setPostingComment(false);
+    }
+  }
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -267,10 +331,51 @@ export default function TicketDetail({ ticketId, currentRequester, onBack }: Pro
           <h2 className="h6 fw-bold text-muted text-uppercase mb-2">Resolution Summary</h2>
           <div
             className="p-3 rounded border"
-            style={{ backgroundColor: "#FAFAFA", minHeight: 80, color: "#aaa", fontStyle: "italic" }}
+            style={{
+              backgroundColor: "#FAFAFA",
+              minHeight: 60,
+              color: ticket.resolutionSummary ? "#1E293B" : "#aaa",
+              fontStyle: ticket.resolutionSummary ? "normal" : "italic",
+            }}
           >
-            No resolution summary available yet.
+            {ticket.resolutionSummary || "No resolution summary available yet."}
           </div>
+        </div>
+
+        {/* Problem Appears Resolved Indicator Card (BR-07) */}
+        <div
+          className="p-3 mb-4 rounded border d-flex justify-content-between align-items-center flex-wrap gap-2"
+          style={{
+            backgroundColor: ticket.problemResolvedReq ? "#EAF6EF" : "#F8FAFC",
+            borderColor: ticket.problemResolvedReq ? "#006B3C" : "#E2E8F0",
+          }}
+          data-testid="problem-resolved-section"
+        >
+          <div>
+            <div className="fw-semibold small" style={{ color: ticket.problemResolvedReq ? "#006B3C" : "#1E293B" }}>
+              {ticket.problemResolvedReq ? "✓ You marked this problem as appearing resolved" : "Is your problem resolved?"}
+            </div>
+            <div className="text-muted small">
+              {ticket.problemResolvedReq
+                ? "The IT team has been notified that your problem appears resolved. Official status remains active until closed by staff."
+                : "Indicate if your issue appears resolved without prematurely closing the ticket."}
+            </div>
+            {resolveError && <div className="text-danger small mt-1">{resolveError}</div>}
+          </div>
+          <button
+            type="button"
+            className={`btn btn-sm ${ticket.problemResolvedReq ? "btn-outline-secondary" : "btn-success"}`}
+            style={!ticket.problemResolvedReq ? { backgroundColor: "#006B3C", borderColor: "#006B3C" } : {}}
+            onClick={handleToggleResolved}
+            disabled={isTogglingResolved}
+            data-testid="toggle-problem-resolved-btn"
+          >
+            {isTogglingResolved
+              ? "Updating..."
+              : ticket.problemResolvedReq
+              ? "↩️ Undo Problem Resolved"
+              : "✓ Problem Appears Resolved"}
+          </button>
         </div>
 
         {/* Attachments Tab-style Section */}
@@ -405,6 +510,93 @@ export default function TicketDetail({ ticketId, currentRequester, onBack }: Pro
           ) : (
             <div className="alert alert-info small mt-3" role="alert">
               ℹ️ Maximum limit of 5 active attachments reached for this ticket.
+            </div>
+          )}
+        </div>
+
+        {/* Public Comments Section (FR-13, BR-05, BR-06) */}
+        <div className="border-top pt-4 mt-4" data-testid="requester-comments-section">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h3 className="h6 fw-bold text-muted text-uppercase mb-0">
+              💬 Public Discussion ({comments.length})
+            </h3>
+            <span className="text-muted small">Visible to IT Staff & Requester</span>
+          </div>
+
+          {commentError && (
+            <div className="alert alert-danger py-2 small mb-3" role="alert">
+              {commentError}
+            </div>
+          )}
+
+          {/* Comment input form */}
+          <form onSubmit={handlePostComment} className="p-3 rounded mb-4" style={{ backgroundColor: "#F5F7F6" }} data-testid="requester-comment-form">
+            <label htmlFor="requester-comment-input" className="form-label fw-semibold small mb-1">
+              Add a comment or follow-up note
+            </label>
+            <textarea
+              id="requester-comment-input"
+              className="form-control"
+              rows={3}
+              maxLength={2000}
+              placeholder="Provide additional details or reply to the IT support team..."
+              value={commentContent}
+              onChange={(e) => setCommentContent(e.target.value)}
+              disabled={postingComment}
+              data-testid="requester-comment-textarea"
+            />
+            <div className="d-flex justify-content-between align-items-center mt-2">
+              <span className="text-muted small">
+                {commentContent.length} / 2,000 characters
+              </span>
+              <button
+                type="submit"
+                className="btn btn-sm text-white px-3"
+                style={{ backgroundColor: "#006B3C", borderColor: "#006B3C" }}
+                disabled={postingComment || !commentContent.trim()}
+                data-testid="requester-submit-comment-btn"
+              >
+                {postingComment ? "Posting..." : "✈️ Post Comment"}
+              </button>
+            </div>
+          </form>
+
+          {/* Comments List */}
+          {loadingComments ? (
+            <div className="text-center py-3 text-muted small">
+              <div className="spinner-border spinner-border-sm text-success me-1" role="status" />
+              Loading comments...
+            </div>
+          ) : comments.length === 0 ? (
+            <div className="text-muted small text-center py-3 bg-light rounded" data-testid="no-comments-msg">
+              No comments yet on this ticket.
+            </div>
+          ) : (
+            <div className="d-flex flex-column gap-3" data-testid="requester-comments-list">
+              {comments.map((comment) => (
+                <div key={comment.id} className="p-3 border rounded bg-white shadow-sm">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <div className="d-flex align-items-center gap-2">
+                      <span
+                        className={`badge ${
+                          comment.author?.role === "STAFF"
+                            ? "bg-primary"
+                            : comment.author?.role === "ADMIN"
+                            ? "bg-dark"
+                            : "bg-success"
+                        }`}
+                      >
+                        {comment.author?.role || "REQUESTER"}
+                      </span>
+                      <strong className="small">{comment.author?.name || "User"}</strong>
+                    </div>
+                    <span className="text-muted small">{formatDate(comment.createdAt)}</span>
+                  </div>
+                  <div className="text-secondary small" style={{ whiteSpace: "pre-wrap" }}>
+                    {comment.content}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

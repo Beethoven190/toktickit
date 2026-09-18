@@ -4,6 +4,10 @@ import multer from "multer";
 import path from "node:path";
 import fs from "node:fs";
 import { getPrisma } from "./prisma.js";
+import { authRouter } from "./routes/auth.js";
+import { staffRouter } from "./routes/staff.js";
+import { adminRouter } from "./routes/admin.js";
+import { optionalAuthenticate } from "./middleware/auth.js";
 
 // The Express app is exported separately from app.listen() (see index.ts) so
 // Supertest can import `app` without opening a port. Do not merge these files.
@@ -11,6 +15,12 @@ export const app = express();
 
 app.use(cors());          // already wired: lets the Vite dev server call this API
 app.use(express.json());
+app.use(optionalAuthenticate); // Populates req.user if Bearer token present
+
+// Mount Authentication, Staff, and Administrator Routers
+app.use("/api/auth", authRouter);
+app.use("/api/staff", staffRouter);
+app.use("/api/admin", adminRouter);
 
 // ---------------------------------------------------------------------------
 // Multer Storage & Validation for Attachments (BR-09, BR-10)
@@ -75,12 +85,12 @@ app.get("/api/categories", async (_req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
-// Lab 2 — Issue 2: Development Requesters list (active only)
+// Development Requesters list (active only) - evolved to User model (REQUESTER)
 // ---------------------------------------------------------------------------
 app.get("/api/requesters", async (_req: Request, res: Response) => {
   try {
-    const requesters = await getPrisma().requesterUser.findMany({
-      where: { isActive: true },
+    const requesters = await getPrisma().user.findMany({
+      where: { role: "REQUESTER", isActive: true },
       orderBy: { id: "asc" },
       select: { id: true, name: true, email: true },
     });
@@ -113,38 +123,45 @@ export async function generateTicketNumber(): Promise<string> {
   const year = new Date().getFullYear();
   const prefix = `TKT-${year}-`;
 
-  const latestTicket = await prisma.ticket.findFirst({
+  const tickets = await prisma.ticket.findMany({
     where: {
       ticketNumber: {
         startsWith: prefix,
       },
-    },
-    orderBy: {
-      ticketNumber: "desc",
     },
     select: {
       ticketNumber: true,
     },
   });
 
-  let nextSeq = 1;
-  if (latestTicket) {
-    const parts = latestTicket.ticketNumber.split("-");
-    const num = parseInt(parts[2], 10);
-    if (!isNaN(num)) {
-      nextSeq = num + 1;
+  let maxSeq = 0;
+  for (const t of tickets) {
+    const parts = t.ticketNumber.split("-");
+    if (parts.length >= 3) {
+      const seq = parseInt(parts[2], 10);
+      if (!isNaN(seq) && seq > maxSeq) {
+        maxSeq = seq;
+      }
     }
   }
 
+  const nextSeq = maxSeq + 1;
   return `${prefix}${String(nextSeq).padStart(6, "0")}`;
 }
 
 // ---------------------------------------------------------------------------
-// Lab 2 — Issue 3: Create Ticket (POST /api/tickets)
+// Create Ticket (POST /api/tickets)
+// In Lab 3: If authenticated, requesterId is ALWAYS derived from req.user.id (BR-03, AC-03)
 // ---------------------------------------------------------------------------
 app.post("/api/tickets", async (req: Request, res: Response) => {
   try {
-    const { requesterId, categoryId, relatedSystemId, summary, description, requestedPriority } = req.body;
+    const { categoryId, relatedSystemId, summary, description, requestedPriority } = req.body;
+    let { requesterId } = req.body;
+
+    // BR-03, AC-03: The authenticated user identity, not a requesterId supplied by the client, determines ownership
+    if (req.user) {
+      requesterId = req.user.id;
+    }
 
     const errors: Record<string, string> = {};
 
@@ -187,7 +204,7 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
     const prisma = getPrisma();
 
     // Verify relations exist in database
-    const requester = await prisma.requesterUser.findUnique({ where: { id: requesterId } });
+    const requester = await prisma.user.findUnique({ where: { id: requesterId } });
     if (!requester || !requester.isActive) {
       return res.status(400).json({ error: "Invalid or inactive requester user", errors: { requesterId: "Requester not found or inactive" } });
     }
@@ -202,27 +219,44 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid related system", errors: { relatedSystemId: "Related system not found" } });
     }
 
-    const ticketNumber = await generateTicketNumber();
-
-    const newTicket = await prisma.ticket.create({
-      data: {
-        ticketNumber,
-        requesterId,
-        categoryId,
-        relatedSystemId,
-        summary: trimmedSummary,
-        description: trimmedDescription,
-        requestedPriority: priority,
-        currentStatus: "NEW",
-      },
-      include: {
-        category: true,
-        relatedSystem: true,
-        requester: {
-          select: { id: true, name: true, email: true },
-        },
-      },
-    });
+    let newTicket;
+    let attempts = 0;
+    while (attempts < 5) {
+      try {
+        const ticketNumber = await generateTicketNumber();
+        newTicket = await prisma.ticket.create({
+          data: {
+            ticketNumber,
+            requesterId,
+            categoryId,
+            relatedSystemId,
+            summary: trimmedSummary,
+            description: trimmedDescription,
+            requestedPriority: priority,
+            itPriority: priority, // Copies requested priority initially (BR-08)
+            currentStatus: "NEW", // Starts with NEW (BR-08)
+            ownerId: null,        // Unassigned initially (BR-08)
+          },
+          include: {
+            category: true,
+            relatedSystem: true,
+            requester: {
+              select: { id: true, name: true, email: true },
+            },
+          },
+        });
+        break;
+      } catch (createErr: unknown) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const errAny = createErr as any;
+        if (errAny.code === "P2002" && errAny.meta?.target?.includes("ticketNumber") && attempts < 4) {
+          attempts++;
+          await new Promise((res) => setTimeout(res, 50 * attempts));
+          continue;
+        }
+        throw createErr;
+      }
+    }
 
     res.status(201).json(newTicket);
   } catch (err) {
@@ -232,13 +266,13 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
-// Lab 2 — Issue 4: My Tickets list with search, filter, sort, pagination,
-// and strict Ownership Protection (Rule BR-05, AC-03, AC-07)
+// My Tickets list with search, filter, sort, pagination,
+// and strict Ownership Protection (Rule BR-03, BR-05, AC-03)
 // ---------------------------------------------------------------------------
 app.get("/api/tickets", async (req: Request, res: Response) => {
   try {
+    let { requesterId } = req.query;
     const {
-      requesterId,
       search,
       categoryId,
       priority,
@@ -248,6 +282,13 @@ app.get("/api/tickets", async (req: Request, res: Response) => {
       sort = "createdAt",
       order = "desc",
     } = req.query;
+
+    // BR-03, AC-03: Authenticated Requester is strictly locked to own ID
+    if (req.user && req.user.role === "REQUESTER") {
+      requesterId = String(req.user.id);
+    } else if (req.user && !requesterId) {
+      requesterId = String(req.user.id);
+    }
 
     if (!requesterId) {
       return res.status(400).json({ error: "requesterId is required for ownership protection" });
@@ -262,7 +303,6 @@ app.get("/api/tickets", async (req: Request, res: Response) => {
     const limitNum = Math.max(1, Math.min(100, parseInt(String(limit), 10) || 10));
     const skip = (pageNum - 1) * limitNum;
 
-    // Build where clause ensuring STRICT ownership protection (BR-05)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {
       requesterId: reqId,
@@ -344,18 +384,22 @@ app.get("/api/tickets", async (req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
-// Lab 2 — Issue 5: Requester Ticket Detail (GET /api/tickets/:id) (BR-05, AC-04)
+// Requester Ticket Detail (GET /api/tickets/:id) (BR-05, BR-17, AC-04)
 // ---------------------------------------------------------------------------
 app.get("/api/tickets/:id", async (req: Request, res: Response) => {
   try {
     const ticketId = Number(req.params.id);
-    const requesterId = Number(req.query.requesterId);
+    let requesterId = req.query.requesterId ? Number(req.query.requesterId) : undefined;
+
+    if (req.user && req.user.role === "REQUESTER") {
+      requesterId = req.user.id;
+    }
 
     if (isNaN(ticketId)) {
       return res.status(400).json({ error: "Invalid ticket ID" });
     }
 
-    if (isNaN(requesterId)) {
+    if (!req.user && requesterId === undefined) {
       return res.status(400).json({ error: "requesterId is required for ownership verification" });
     }
 
@@ -371,6 +415,10 @@ app.get("/api/tickets/:id", async (req: Request, res: Response) => {
         attachments: {
           orderBy: { createdAt: "asc" },
         },
+        publicComments: {
+          orderBy: { createdAt: "asc" },
+          include: { author: { select: { id: true, name: true, role: true } } },
+        },
       },
     });
 
@@ -378,9 +426,16 @@ app.get("/api/tickets/:id", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Ticket not found" });
     }
 
-    // Ownership protection: 403 Forbidden if not owned (BR-05, AC-04)
-    if (ticket.requesterId !== requesterId) {
-      return res.status(403).json({ error: "Forbidden: You do not have permission to view this ticket" });
+    // Role-based authorization & ownership protection:
+    // If requester, can only view own ticket (BR-17: return 404/403 to prevent enumeration)
+    if (req.user) {
+      if (req.user.role === "REQUESTER" && ticket.requesterId !== req.user.id) {
+        return res.status(404).json({ error: "Ticket not found" });
+      }
+    } else {
+      if (ticket.requesterId !== requesterId) {
+        return res.status(403).json({ error: "Forbidden: You do not have permission to view this ticket" });
+      }
     }
 
     res.status(200).json(ticket);
@@ -391,7 +446,7 @@ app.get("/api/tickets/:id", async (req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
-// Lab 2 — Issue 5: Upload Attachment (POST /api/tickets/:id/attachments)
+// Upload Attachment (POST /api/tickets/:id/attachments)
 // ---------------------------------------------------------------------------
 app.post("/api/tickets/:id/attachments", (req: Request, res: Response, next) => {
   upload.single("file")(req, res, (err: unknown) => {
@@ -408,7 +463,7 @@ app.post("/api/tickets/:id/attachments", (req: Request, res: Response, next) => 
 }, async (req: Request, res: Response) => {
   try {
     const ticketId = Number(req.params.id);
-    const requesterId = Number(req.body.requesterId || req.query.requesterId);
+    let requesterId = req.user ? req.user.id : Number(req.body.requesterId || req.query.requesterId);
 
     if (isNaN(ticketId)) {
       return res.status(400).json({ error: "Invalid ticket ID" });
@@ -427,7 +482,8 @@ app.post("/api/tickets/:id/attachments", (req: Request, res: Response, next) => 
     }
 
     // Check ownership
-    if (ticket.requesterId !== requesterId) {
+    const isStaffOrAdmin = req.user && (req.user.role === "STAFF" || req.user.role === "ADMIN");
+    if (!isStaffOrAdmin && ticket.requesterId !== requesterId) {
       fs.unlinkSync(req.file.path);
       return res.status(403).json({ error: "Forbidden: You do not own this ticket" });
     }
@@ -461,13 +517,13 @@ app.post("/api/tickets/:id/attachments", (req: Request, res: Response, next) => 
 });
 
 // ---------------------------------------------------------------------------
-// Lab 2 — Issue 5: Download Attachment (GET /api/tickets/:id/attachments/:attachmentId/file)
+// Download Attachment (GET /api/tickets/:id/attachments/:attachmentId/file)
 // ---------------------------------------------------------------------------
 app.get("/api/tickets/:id/attachments/:attachmentId/file", async (req: Request, res: Response) => {
   try {
     const ticketId = Number(req.params.id);
     const attachmentId = Number(req.params.attachmentId);
-    const requesterId = Number(req.query.requesterId);
+    const requesterId = req.user ? req.user.id : Number(req.query.requesterId);
 
     const prisma = getPrisma();
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
@@ -476,7 +532,8 @@ app.get("/api/tickets/:id/attachments/:attachmentId/file", async (req: Request, 
       return res.status(404).json({ error: "Ticket not found" });
     }
 
-    if (ticket.requesterId !== requesterId) {
+    const isStaffOrAdmin = req.user && (req.user.role === "STAFF" || req.user.role === "ADMIN");
+    if (!isStaffOrAdmin && ticket.requesterId !== requesterId) {
       return res.status(403).json({ error: "Forbidden: You do not own this ticket" });
     }
 
@@ -503,13 +560,14 @@ app.get("/api/tickets/:id/attachments/:attachmentId/file", async (req: Request, 
 });
 
 // ---------------------------------------------------------------------------
-// Lab 2 — Issue 5: Soft-Remove Attachment (DELETE /api/tickets/:id/attachments/:attachmentId)
+// Soft-Remove Attachment (DELETE /api/tickets/:id/attachments/:attachmentId)
 // ---------------------------------------------------------------------------
 app.delete("/api/tickets/:id/attachments/:attachmentId", async (req: Request, res: Response) => {
   try {
     const ticketId = Number(req.params.id);
     const attachmentId = Number(req.params.attachmentId);
-    const { requesterId, removalReason } = req.body;
+    const { removalReason } = req.body;
+    const requesterId = req.user ? req.user.id : Number(req.body.requesterId);
 
     if (!removalReason || typeof removalReason !== "string" || removalReason.trim().length < 5) {
       return res.status(400).json({ error: "Removal reason is required and must be at least 5 characters" });
@@ -522,7 +580,8 @@ app.delete("/api/tickets/:id/attachments/:attachmentId", async (req: Request, re
       return res.status(404).json({ error: "Ticket not found" });
     }
 
-    if (ticket.requesterId !== Number(requesterId)) {
+    const isStaffOrAdmin = req.user && (req.user.role === "STAFF" || req.user.role === "ADMIN");
+    if (!isStaffOrAdmin && ticket.requesterId !== requesterId) {
       return res.status(403).json({ error: "Forbidden: You do not own this ticket" });
     }
 
@@ -531,7 +590,6 @@ app.delete("/api/tickets/:id/attachments/:attachmentId", async (req: Request, re
       return res.status(404).json({ error: "Attachment not found" });
     }
 
-    // Soft-remove: update isRemoved, removalReason, removedAt (BR-12, BR-13)
     const updated = await prisma.attachment.update({
       where: { id: attachmentId },
       data: {
@@ -548,4 +606,283 @@ app.delete("/api/tickets/:id/attachments/:attachmentId", async (req: Request, re
   }
 });
 
+// ---------------------------------------------------------------------------
+// Public Comments (GET /api/tickets/:id/comments) (FR-13, BR-05, AC-13)
+// ---------------------------------------------------------------------------
+app.get("/api/tickets/:id/comments", async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid ticket ID" } });
+    }
+
+    const prisma = getPrisma();
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { id: true, requesterId: true },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "Ticket not found" } });
+    }
+
+    // Requester can only access comments on their own ticket (BR-05, AC-13)
+    if (req.user) {
+      if (req.user.role === "REQUESTER" && ticket.requesterId !== req.user.id) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Forbidden: You do not own this ticket" } });
+      }
+    } else {
+      const requesterId = Number(req.query.requesterId);
+      if (!requesterId || ticket.requesterId !== requesterId) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Forbidden: You do not own this ticket" } });
+      }
+    }
+
+    const comments = await prisma.publicComment.findMany({
+      where: { ticketId },
+      orderBy: { createdAt: "asc" },
+      include: {
+        author: { select: { id: true, name: true, role: true } },
+      },
+    });
+
+    return res.status(200).json(comments);
+  } catch (err) {
+    console.error("Failed to fetch comments:", err);
+    return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to fetch comments" } });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Post Public Comment (POST /api/tickets/:id/comments) (FR-13, BR-05, BR-06, AC-13)
+// ---------------------------------------------------------------------------
+app.post("/api/tickets/:id/comments", async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid ticket ID" } });
+    }
+
+    const { content } = req.body;
+    if (!content || typeof content !== "string" || content.trim().length === 0 || content.trim().length > 2000) {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Comment content must be between 1 and 2,000 characters",
+        },
+      });
+    }
+
+    const prisma = getPrisma();
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { id: true, requesterId: true },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "Ticket not found" } });
+    }
+
+    let authorId: number;
+    if (req.user) {
+      if (req.user.role === "REQUESTER" && ticket.requesterId !== req.user.id) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Forbidden: You do not own this ticket" } });
+      }
+      authorId = req.user.id;
+    } else {
+      const requesterId = Number(req.body.requesterId || req.query.requesterId);
+      if (!requesterId || ticket.requesterId !== requesterId) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Forbidden: You do not own this ticket" } });
+      }
+      authorId = requesterId;
+    }
+
+    const comment = await prisma.publicComment.create({
+      data: {
+        ticketId,
+        authorId,
+        content: content.trim(),
+      },
+      include: {
+        author: { select: { id: true, name: true, role: true } },
+      },
+    });
+
+    return res.status(201).json(comment);
+  } catch (err) {
+    console.error("Failed to post comment:", err);
+    return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to post comment" } });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Internal Notes (GET /api/tickets/:id/notes) (FR-14, BR-05, AC-14)
+// ---------------------------------------------------------------------------
+app.get("/api/tickets/:id/notes", async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid ticket ID" } });
+    }
+
+    // Strictly forbidden for Requesters (BR-05, AC-14)
+    if (!req.user || req.user.role === "REQUESTER") {
+      return res.status(403).json({
+        error: {
+          code: "FORBIDDEN",
+          message: "Forbidden: Only IT Staff and Administrators may access internal notes",
+        },
+      });
+    }
+
+    const prisma = getPrisma();
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { id: true },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "Ticket not found" } });
+    }
+
+    const notes = await prisma.internalNote.findMany({
+      where: { ticketId },
+      orderBy: { createdAt: "asc" },
+      include: {
+        author: { select: { id: true, name: true, role: true } },
+      },
+    });
+
+    return res.status(200).json(notes);
+  } catch (err) {
+    console.error("Failed to fetch internal notes:", err);
+    return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to fetch internal notes" } });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Post Internal Note (POST /api/tickets/:id/notes) (FR-14, BR-05, BR-06, AC-14)
+// ---------------------------------------------------------------------------
+app.post("/api/tickets/:id/notes", async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid ticket ID" } });
+    }
+
+    // Strictly forbidden for Requesters (BR-05, AC-14)
+    if (!req.user || req.user.role === "REQUESTER") {
+      return res.status(403).json({
+        error: {
+          code: "FORBIDDEN",
+          message: "Forbidden: Only IT Staff and Administrators may create internal notes",
+        },
+      });
+    }
+
+    const { content } = req.body;
+    if (!content || typeof content !== "string" || content.trim().length === 0 || content.trim().length > 2000) {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Internal note content must be between 1 and 2,000 characters",
+        },
+      });
+    }
+
+    const prisma = getPrisma();
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { id: true },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "Ticket not found" } });
+    }
+
+    const note = await prisma.internalNote.create({
+      data: {
+        ticketId,
+        authorId: req.user.id,
+        content: content.trim(),
+      },
+      include: {
+        author: { select: { id: true, name: true, role: true } },
+      },
+    });
+
+    return res.status(201).json(note);
+  } catch (err) {
+    console.error("Failed to post internal note:", err);
+    return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to post internal note" } });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Problem Appears Resolved Indication (POST / PATCH /api/tickets/:id/resolve-indication) (FR-07, BR-07)
+// ---------------------------------------------------------------------------
+const handleResolveIndication = async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid ticket ID" } });
+    }
+
+    const prisma = getPrisma();
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      include: {
+        category: true,
+        relatedSystem: true,
+        requester: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "Ticket not found" } });
+    }
+
+    // Ownership verification: Requester can only toggle on their own ticket
+    if (req.user) {
+      if (req.user.role === "REQUESTER" && ticket.requesterId !== req.user.id) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Forbidden: You may only signal resolution on your own tickets" } });
+      }
+    } else {
+      const requesterId = Number(req.body.requesterId || req.query.requesterId);
+      if (!requesterId || ticket.requesterId !== requesterId) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Forbidden: You may only signal resolution on your own tickets" } });
+      }
+    }
+
+    const isResolved = req.body.isResolved !== undefined ? Boolean(req.body.isResolved) : true;
+
+    // BR-07: Updates problemResolvedReq flag, does NOT alter currentStatus
+    const updated = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        problemResolvedReq: isResolved,
+      },
+      include: {
+        category: true,
+        relatedSystem: true,
+        requester: { select: { id: true, name: true, email: true } },
+        attachments: { orderBy: { createdAt: "asc" } },
+        publicComments: {
+          orderBy: { createdAt: "asc" },
+          include: { author: { select: { id: true, name: true, role: true } } },
+        },
+      },
+    });
+
+    return res.status(200).json(updated);
+  } catch (err) {
+    console.error("Failed to update resolution indication:", err);
+    return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to update resolution indication" } });
+  }
+};
+
+app.post("/api/tickets/:id/resolve-indication", handleResolveIndication);
+app.patch("/api/tickets/:id/resolve-indication", handleResolveIndication);
+
 export default app;
+
