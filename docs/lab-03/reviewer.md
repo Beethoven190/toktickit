@@ -27,7 +27,8 @@ Throughout the Lab 3 sprint, our team strictly enforces the engineering workflow
 | **Issue 2** | `feature/lab3-2-auth-foundation` | #25 | [PR #25](https://github.com/Beethoven190/toktickit/pull/25) | @SANOP19 | **Approved** | @SANOP19 | `a4c5f7d` |
 | **Issue 3** | `feature/lab3-3-staff-queue` | #27 | [PR #27](https://github.com/Beethoven190/toktickit/pull/27) | @SANOP19 | **Approved** | @SANOP19 | `8d79c2a` |
 | **Issue 4** | `feature/lab3-4-staff-operations` | #29 | [PR #29](https://github.com/Beethoven190/toktickit/pull/29) | @SANOP19 | **Approved** | @SANOP19 | `bd05a74` |
-| **Issue 5** | `feature/lab3-5-comments-notes` | #31 | [PR #31](https://github.com/Beethoven190/toktickit/pull/31) | @SANOP19 | Under Review | @SANOP19 | Pending Review |
+| **Issue 5** | `feature/lab3-5-comments-notes` | #31 | [PR #31](https://github.com/Beethoven190/toktickit/pull/31) | @SANOP19 | **Approved** | @SANOP19 | `a776166` |
+| **Issue 6** | `feature/lab3-6-admin-management` | TBD | Pending PR | @SANOP19 | In Progress | @SANOP19 | TBD |
 
 ### Detailed Evaluation of Author PRs:
 
@@ -101,9 +102,17 @@ Throughout the Lab 3 sprint, our team strictly enforces the engineering workflow
   - **Problem Appears Resolved (`POST/PATCH /api/tickets/:id/resolve-indication`):** Allows ticket requester to toggle `problemResolvedReq: true/false` without altering official ticket status (BR-07).
   - **Frontend UI & Badge Integration:** Added interactive comments thread and notes tab in `StaffTicketDetail.tsx`, comments thread and resolution toggle in `TicketDetail.tsx`, and `✓ Resolved` badge in `MyTickets.tsx`.
   - **Automated Tests:** 135 passing tests (92 backend + 43 frontend, 100% pass rate with zero regression).
-- **Reviewer Evaluation (@SANOP19):** Pending review
-- **Author Response (@Beethoven190):** Pending review
-- **Outcome:** Submitted for review and merge into `lab3-staging` by @SANOP19.
+- **Reviewer Evaluation (@SANOP19):**
+  > "### Peer Review: Approved
+  > Great job on implementing Issue 5! The implementation is clean, robust, and adheres strictly to the Sprint 3 specifications and business rules.
+  > - **Strict RBAC & Confidentiality (AC-14, BR-05):** Verified that Internal Notes are strictly confidential to IT Staff and Admins. Requesters are blocked with 403 and cannot see metadata or content.
+  > - **Public Comments (AC-13, BR-06):** Validated character limits (1-2000 chars) and append-only immutability. Requester ownership checks correctly protect against cross-ticket tampering.
+  > - **Problem Appears Resolved Toggle (BR-07):** Requester toggle functions smoothly without prematurely changing official ticket status. Badges in My Tickets provide immediate visual confirmation.
+  > - **Test Coverage & UI Quality:** Comprehensive backend and frontend test suites pass 100% (135/135 tests) with zero regressions across prior sprint features.
+  > 
+  > APPROVE @Beethoven190"
+- **Author Response (@Beethoven190):** Thanks @SANOP19!
+- **Outcome:** Approved and merged into `lab3-staging` by @SANOP19 (commit `a776166`).
 
 ---
 
