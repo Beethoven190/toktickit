@@ -28,7 +28,7 @@ Throughout the Lab 3 sprint, our team strictly enforces the engineering workflow
 | **Issue 3** | `feature/lab3-3-staff-queue` | #27 | [PR #27](https://github.com/Beethoven190/toktickit/pull/27) | @SANOP19 | **Approved** | @SANOP19 | `8d79c2a` |
 | **Issue 4** | `feature/lab3-4-staff-operations` | #29 | [PR #29](https://github.com/Beethoven190/toktickit/pull/29) | @SANOP19 | **Approved** | @SANOP19 | `bd05a74` |
 | **Issue 5** | `feature/lab3-5-comments-notes` | #31 | [PR #31](https://github.com/Beethoven190/toktickit/pull/31) | @SANOP19 | **Approved** | @SANOP19 | `a776166` |
-| **Issue 6** | `feature/lab3-6-admin-management` | TBD | Pending PR | @SANOP19 | In Progress | @SANOP19 | TBD |
+| **Issue 6** | `feature/lab3-6-admin-management` | #33 | [PR #33](https://github.com/Beethoven190/toktickit/pull/33) | @SANOP19 | **Approved** | @SANOP19 | `1c7a20e` |
 
 ### Detailed Evaluation of Author PRs:
 
@@ -114,6 +114,39 @@ Throughout the Lab 3 sprint, our team strictly enforces the engineering workflow
 - **Author Response (@Beethoven190):** Thanks @SANOP19!
 - **Outcome:** Approved and merged into `lab3-staging` by @SANOP19 (commit `a776166`).
 
+#### PR #33 (Issue 6: Administrator User Management & Audit)
+- **PR URL:** [https://github.com/Beethoven190/toktickit/pull/33](https://github.com/Beethoven190/toktickit/pull/33)
+- **Author Summary:** Implemented full administrator user management module conforming to Teacher Mockup 4 and specifications:
+  - Strict RBAC on `/api/admin/*` ensuring only `ADMIN` can access (403 Forbidden for Requester and IT Staff).
+  - `GET /api/admin/users`: Search, role filter, active status filter, sorting, pagination, and stripping `passwordHash`.
+  - `POST /api/admin/users`: User creation with bcrypt (cost 12), password complexity validation, `mustChangePassword: true`, and duplicate email conflict (`409 Conflict`).
+  - `PATCH /api/admin/users/:id`: Profile updates with safety guards enforcing self-protection (BR-13), last active admin protection (BR-14), ticket ownership safety (BR-15), and email uniqueness.
+  - `POST /api/admin/users/:id/reset-password`: Initial password reset forcing next-login change.
+  - Frontend `UserManagement.tsx`: Zen Green two-panel split screen on desktop and responsive cards on mobile, live filters, create/edit drawer with active toggle, reset password action, and deactivation button (safely hidden on self and last admin).
+  - Automated tests: 160 passing tests (110 server + 50 client, 100% pass rate with zero regression).
+- **Reviewer Evaluation (@SANOP19):**
+  > "### Peer Review Summary - Issue 6: Administrator User Management & Audit
+  > Excellent work on implementing Issue 6! The implementation fully satisfies the Sprint 3 specifications, Acceptance Criteria (AC-15 through AC-19), and aligns perfectly with Teacher Mockup 4.
+  > 
+  > #### Key Highlights & Verification:
+  > 1. **Security & RBAC Enforcement:**
+  >    - Strict access control on all `/api/admin/*` endpoints returning `403 Forbidden` for non-admin roles.
+  >    - Robust account provisioning with `bcrypt` (cost 12), password complexity validation, duplicate email detection (`409 Conflict`), and mandatory first-login quarantine (`mustChangePassword: true`).
+  > 2. **Comprehensive Safety Guards:**
+  >    - **Self-Protection (BR-13):** Authenticated administrators cannot deactivate or demote themselves.
+  >    - **Last Admin Protection (BR-14):** Prevents locking out the system by demoting/deactivating the final active administrator.
+  >    - **Ticket Ownership Safety (BR-15):** Thoughtful guard preventing deactivation or demoting of staff currently assigned to active tickets.
+  > 3. **UI/UX & Design Language (Teacher Mockup 4):**
+  >    - Clean, intuitive interface with Zen Green (`#006B3C`) aesthetic, role badges, live search/filtering, and responsive drawer panel for Create/Edit/Reset Password.
+  >    - Safety rules are correctly reflected in the UI (deactivate action is hidden/disabled for self and last admin).
+  > 4. **Test Coverage & Build Verification:**
+  >    - 100% test pass rate across backend and frontend suites (160/160 tests passing, zero regression).
+  >    - Clean production compilation on both Server (`tsc`) and Client (`vite build`).
+  > 
+  > APPROVE @Beethoven190"
+- **Author Response (@Beethoven190):** Thank you @SANOP19 for the review and merge!
+- **Outcome:** Approved and merged into `lab3-staging` by @SANOP19 (commit `1c7a20e`).
+
 ---
 
 ## 3. PRs Reviewed & Merged by @Beethoven190 (As Reviewer)
@@ -127,7 +160,7 @@ As part of peer collaboration, @Beethoven190 performs code reviews and executes 
 | **@SANOP19** | SANOP19/toktickit | [PR #27](https://github.com/SANOP19/toktickit/pull/27) | Issue 3: Requester Continuation & Public Comments | **Approved** | @Beethoven190 | Merged |
 | **@SANOP19** | SANOP19/toktickit | [PR #29](https://github.com/SANOP19/toktickit/pull/29) | Issue 4: IT Staff Ticket Queue, Filters & Responsive UI | **Approved** | @Beethoven190 | Merged |
 | **@SANOP19** | SANOP19/toktickit | [PR #31](https://github.com/SANOP19/toktickit/pull/31) | Issue 5: IT Staff Ticket Detail, Operational Controls & Internal Notes | **Approved** | @Beethoven190 | `6e8a011` |
-| **@SANOP19** | SANOP19/toktickit | [PR #33](https://github.com/SANOP19/toktickit/pull/33) | Issue 6: Administrator User Management, Account Provisioning & Safety Controls | **Approved** | @Beethoven190 | Pending Merge |
+| **@SANOP19** | SANOP19/toktickit | [PR #33](https://github.com/SANOP19/toktickit/pull/33) | Issue 6: Administrator User Management, Account Provisioning & Safety Controls | **Approved** | @Beethoven190 | `7271019` |
 | **@pimchayasupr-hash** | pimchayasupr-hash/toktickit | [PR #36](https://github.com/pimchayasupr-hash/toktickit/pull/36) | Lab 3 Full Stack Implementation & Integration | **Reviewed** | Collaborative | In progress |
 | **@FramePongrit** | FramePongrit/toktickit | [PR #64](https://github.com/FramePongrit/toktickit/pull/64) | Issue 1: Sprint 3 Engineering Contract & Traceability | **Approved** | @Beethoven190 | `313d4ef` |
 
