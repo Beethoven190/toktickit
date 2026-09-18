@@ -8,6 +8,7 @@ import MyTickets from "./components/MyTickets.js";
 import TicketDetail from "./components/TicketDetail.js";
 import StaffTicketQueue from "./components/StaffTicketQueue.js";
 import { StaffTicketDetail } from "./components/StaffTicketDetail.js";
+import UserManagement from "./components/UserManagement.js";
 
 type UiState = "idle" | "loading" | "success" | "error";
 
@@ -295,7 +296,7 @@ function AppContent() {
       )}
 
       {/* Main Container */}
-      <main className="container py-4" style={{ maxWidth: 960 }}>
+      <main className="container py-4" style={{ maxWidth: activeTab === "admin-users" ? 1200 : 960 }}>
         {showSystemCheck ? (
           <div className="card border-0 shadow-sm p-4 my-4" style={{ backgroundColor: "#FFFFFF", borderRadius: 12 }}>
             <div className="d-flex justify-content-between align-items-center mb-3">
@@ -380,10 +381,7 @@ function AppContent() {
         ) : activeTab === "queue" ? (
           <StaffTicketQueue onSelectTicket={(t) => setSelectedTicketId(t.id)} />
         ) : activeTab === "admin-users" ? (
-          <div className="card border-0 shadow-sm p-4" style={{ borderRadius: 12 }}>
-            <h2 className="h4 fw-bold" style={{ color: "#006B3C" }}>⚙️ User Management</h2>
-            <p className="text-muted">Administrator screen will be connected in Issue 5.</p>
-          </div>
+          <UserManagement />
         ) : (
           <MyTickets
             currentRequester={currentRequester}

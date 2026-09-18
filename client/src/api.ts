@@ -632,6 +632,150 @@ export async function toggleProblemResolved(ticketId: number, isResolved: boolea
   return data;
 }
 
+// ---------------------------------------------------------------------------
+// Administrator User Management Endpoints (Issue 6, AC-15..AC-19)
+// ---------------------------------------------------------------------------
 
+export interface AdminUser {
+  id: number;
+  name: string;
+  email: string;
+  role: UserRole;
+  mustChangePassword: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
+export interface CreateAdminUserDto {
+  name: string;
+  email: string;
+  role: UserRole;
+  isActive?: boolean;
+  initialPassword: string;
+}
 
+export interface UpdateAdminUserDto {
+  name?: string;
+  email?: string;
+  role?: UserRole;
+  isActive?: boolean;
+}
+
+export interface AdminUserFilterParams {
+  search?: string;
+  role?: string;
+  isActive?: boolean | string;
+  sort?: string;
+  order?: "asc" | "desc";
+  page?: number;
+  pageSize?: number;
+  paginate?: boolean;
+}
+
+export async function getAdminUsers(params?: AdminUserFilterParams): Promise<AdminUser[]> {
+  const query = new URLSearchParams();
+  if (params?.search) query.append("search", params.search);
+  if (params?.role) query.append("role", params.role);
+  if (params?.isActive !== undefined && params?.isActive !== "") {
+    query.append("isActive", String(params.isActive));
+  }
+  if (params?.sort) query.append("sort", params.sort);
+  if (params?.order) query.append("order", params.order);
+  if (params?.page) query.append("page", String(params.page));
+  if (params?.pageSize) query.append("pageSize", String(params.pageSize));
+  if (params?.paginate) query.append("paginate", "true");
+
+  const queryString = query.toString();
+  const url = `${API_URL}/api/admin/users${queryString ? `?${queryString}` : ""}`;
+
+  const res = await fetch(url, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to fetch users: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return Array.isArray(data) ? data : data.data || [];
+}
+
+export async function getAdminUserById(id: number): Promise<AdminUser> {
+  const res = await fetch(`${API_URL}/api/admin/users/${id}`, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to fetch user: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export async function createAdminUser(dto: CreateAdminUserDto): Promise<AdminUser> {
+  const res = await fetch(`${API_URL}/api/admin/users`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(dto),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to create user: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export async function updateAdminUser(id: number, dto: UpdateAdminUserDto): Promise<AdminUser> {
+  const res = await fetch(`${API_URL}/api/admin/users/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(dto),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to update user: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export async function resetAdminUserPassword(
+  id: number,
+  initialPassword: string
+): Promise<{ message: string; user: AdminUser }> {
+  const res = await fetch(`${API_URL}/api/admin/users/${id}/reset-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ initialPassword }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to reset password: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
