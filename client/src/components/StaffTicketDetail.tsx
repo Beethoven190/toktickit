@@ -8,6 +8,8 @@ import {
   assignStaffTicket,
   updateStaffTicketPriority,
   updateStaffTicketStatus,
+  addTicketComment,
+  addTicketInternalNote,
 } from "../api.js";
 
 interface StaffTicketDetailProps {
@@ -57,6 +59,10 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({
 
   // Tabs state
   const [activeTab, setActiveTab] = useState<"comments" | "notes" | "attachments" | "actions">("comments");
+  const [newCommentText, setNewCommentText] = useState("");
+  const [isPostingComment, setIsPostingComment] = useState(false);
+  const [newNoteText, setNewNoteText] = useState("");
+  const [isPostingNote, setIsPostingNote] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -165,6 +171,56 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({
     }
   };
 
+  // 5. Post Public Comment
+  const handlePostComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ticket || !newCommentText.trim()) return;
+    try {
+      setIsPostingComment(true);
+      setError(null);
+      const created = await addTicketComment(ticket.id, newCommentText.trim());
+      setTicket((prev) =>
+        prev
+          ? {
+              ...prev,
+              publicComments: [...(prev.publicComments || []), created],
+            }
+          : null
+      );
+      setNewCommentText("");
+      showSuccess("Public comment posted successfully.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to post comment");
+    } finally {
+      setIsPostingComment(false);
+    }
+  };
+
+  // 6. Post Internal Note
+  const handlePostNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ticket || !newNoteText.trim()) return;
+    try {
+      setIsPostingNote(true);
+      setError(null);
+      const created = await addTicketInternalNote(ticket.id, newNoteText.trim());
+      setTicket((prev) =>
+        prev
+          ? {
+              ...prev,
+              internalNotes: [...(prev.internalNotes || []), created],
+            }
+          : null
+      );
+      setNewNoteText("");
+      showSuccess("Internal note recorded successfully.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to post internal note");
+    } finally {
+      setIsPostingNote(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="container py-5 text-center" data-testid="staff-detail-loading">
@@ -270,6 +326,20 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({
         </div>
 
         <div className="card-body p-4">
+          {/* Requester Resolution Indicator */}
+          {ticket.problemResolvedReq && (
+            <div
+              className="alert d-flex align-items-center gap-2 mb-3 py-2 px-3"
+              style={{ backgroundColor: "#EAF6EF", borderColor: "#A7F3D0", color: "#006B3C" }}
+              data-testid="requester-resolved-indicator"
+            >
+              <span className="fw-bold">✓ Requester Indicated Problem Appears Resolved</span>
+              <small className="text-muted ms-auto">
+                Requester reported resolution. Please verify before formally setting status to Resolved/Closed.
+              </small>
+            </div>
+          )}
+
           {/* Row 1: Ticket No | Category | Related System */}
           <div className="row g-3 mb-3">
             <div className="col-12 col-md-4">
@@ -553,13 +623,46 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({
           {/* Public Comments Tab */}
           {activeTab === "comments" && (
             <div>
+              {/* Comment Input Form */}
+              <form onSubmit={handlePostComment} className="p-3 bg-light rounded-3 mb-4" data-testid="staff-comment-form">
+                <label htmlFor="staff-comment-input" className="form-label fw-semibold small text-dark mb-1">
+                  Add Public Comment (visible to requester)
+                </label>
+                <textarea
+                  id="staff-comment-input"
+                  className="form-control"
+                  rows={3}
+                  maxLength={2000}
+                  placeholder="Type your message for the requester here..."
+                  value={newCommentText}
+                  onChange={(e) => setNewCommentText(e.target.value)}
+                  disabled={isPostingComment}
+                  data-testid="staff-comment-textarea"
+                />
+                <div className="d-flex justify-content-between align-items-center mt-2">
+                  <span className="text-muted small">
+                    {newCommentText.length} / 2,000 characters
+                  </span>
+                  <button
+                    type="submit"
+                    className="btn btn-sm text-white px-3"
+                    style={{ backgroundColor: "#006B3C", borderColor: "#006B3C" }}
+                    disabled={isPostingComment || !newCommentText.trim()}
+                    data-testid="staff-submit-comment-btn"
+                  >
+                    {isPostingComment ? "Posting..." : "✈️ Post Comment"}
+                  </button>
+                </div>
+              </form>
+
+              {/* Comments Thread */}
               {ticket.publicComments && ticket.publicComments.length > 0 ? (
-                <div className="d-flex flex-column gap-3">
+                <div className="d-flex flex-column gap-3" data-testid="staff-comments-list">
                   {ticket.publicComments.map((comment) => (
                     <div key={comment.id} className="p-3 border rounded bg-light">
                       <div className="d-flex justify-content-between align-items-center mb-1">
                         <div className="d-flex align-items-center gap-2">
-                          <span className="badge bg-secondary">
+                          <span className={`badge ${comment.author?.role === "STAFF" ? "bg-primary" : comment.author?.role === "ADMIN" ? "bg-dark" : "bg-secondary"}`}>
                             {comment.author?.role || "USER"}
                           </span>
                           <span className="fw-bold small">{comment.author?.name}</span>
@@ -568,13 +671,13 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({
                           {new Date(comment.createdAt).toLocaleString()}
                         </span>
                       </div>
-                      <p className="mb-0 text-secondary">{comment.content}</p>
+                      <p className="mb-0 text-secondary" style={{ whiteSpace: "pre-wrap" }}>{comment.content}</p>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-muted text-center py-4">
-                  No public comments yet. (Comments posting will be enabled in Issue 5).
+                  No public comments yet on this ticket.
                 </div>
               )}
             </div>
@@ -589,8 +692,41 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({
               >
                 🔒 <strong>Confidential:</strong> Internal notes are strictly visible to IT Staff and Administrators only.
               </div>
+
+              {/* Internal Note Input Form */}
+              <form onSubmit={handlePostNote} className="p-3 rounded-3 mb-4" style={{ backgroundColor: "#FFFBEB", border: "1px solid #FDE68A" }} data-testid="staff-note-form">
+                <label htmlFor="staff-note-input" className="form-label fw-semibold small text-dark mb-1">
+                  Add Internal Note (confidential to staff)
+                </label>
+                <textarea
+                  id="staff-note-input"
+                  className="form-control"
+                  rows={3}
+                  maxLength={2000}
+                  placeholder="Record confidential diagnosis, vendor notes, or internal observations..."
+                  value={newNoteText}
+                  onChange={(e) => setNewNoteText(e.target.value)}
+                  disabled={isPostingNote}
+                  data-testid="staff-note-textarea"
+                />
+                <div className="d-flex justify-content-between align-items-center mt-2">
+                  <span className="text-muted small">
+                    {newNoteText.length} / 2,000 characters
+                  </span>
+                  <button
+                    type="submit"
+                    className="btn btn-sm btn-warning text-dark px-3 fw-bold"
+                    disabled={isPostingNote || !newNoteText.trim()}
+                    data-testid="staff-submit-note-btn"
+                  >
+                    {isPostingNote ? "Saving..." : "🔒 Add Note"}
+                  </button>
+                </div>
+              </form>
+
+              {/* Notes Thread */}
               {ticket.internalNotes && ticket.internalNotes.length > 0 ? (
-                <div className="d-flex flex-column gap-3">
+                <div className="d-flex flex-column gap-3" data-testid="staff-notes-list">
                   {ticket.internalNotes.map((note) => (
                     <div key={note.id} className="p-3 border rounded" style={{ backgroundColor: "#FFFBEB" }}>
                       <div className="d-flex justify-content-between align-items-center mb-1">
@@ -604,13 +740,13 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({
                           {new Date(note.createdAt).toLocaleString()}
                         </span>
                       </div>
-                      <p className="mb-0 text-secondary">{note.content}</p>
+                      <p className="mb-0 text-secondary" style={{ whiteSpace: "pre-wrap" }}>{note.content}</p>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-muted text-center py-4">
-                  No internal notes recorded. (Notes posting will be enabled in Issue 5).
+                  No internal notes recorded yet.
                 </div>
               )}
             </div>

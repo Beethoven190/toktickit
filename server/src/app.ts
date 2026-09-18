@@ -413,6 +413,10 @@ app.get("/api/tickets/:id", async (req: Request, res: Response) => {
         attachments: {
           orderBy: { createdAt: "asc" },
         },
+        publicComments: {
+          orderBy: { createdAt: "asc" },
+          include: { author: { select: { id: true, name: true, role: true } } },
+        },
       },
     });
 
@@ -600,4 +604,283 @@ app.delete("/api/tickets/:id/attachments/:attachmentId", async (req: Request, re
   }
 });
 
+// ---------------------------------------------------------------------------
+// Public Comments (GET /api/tickets/:id/comments) (FR-13, BR-05, AC-13)
+// ---------------------------------------------------------------------------
+app.get("/api/tickets/:id/comments", async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid ticket ID" } });
+    }
+
+    const prisma = getPrisma();
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { id: true, requesterId: true },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "Ticket not found" } });
+    }
+
+    // Requester can only access comments on their own ticket (BR-05, AC-13)
+    if (req.user) {
+      if (req.user.role === "REQUESTER" && ticket.requesterId !== req.user.id) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Forbidden: You do not own this ticket" } });
+      }
+    } else {
+      const requesterId = Number(req.query.requesterId);
+      if (!requesterId || ticket.requesterId !== requesterId) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Forbidden: You do not own this ticket" } });
+      }
+    }
+
+    const comments = await prisma.publicComment.findMany({
+      where: { ticketId },
+      orderBy: { createdAt: "asc" },
+      include: {
+        author: { select: { id: true, name: true, role: true } },
+      },
+    });
+
+    return res.status(200).json(comments);
+  } catch (err) {
+    console.error("Failed to fetch comments:", err);
+    return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to fetch comments" } });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Post Public Comment (POST /api/tickets/:id/comments) (FR-13, BR-05, BR-06, AC-13)
+// ---------------------------------------------------------------------------
+app.post("/api/tickets/:id/comments", async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid ticket ID" } });
+    }
+
+    const { content } = req.body;
+    if (!content || typeof content !== "string" || content.trim().length === 0 || content.trim().length > 2000) {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Comment content must be between 1 and 2,000 characters",
+        },
+      });
+    }
+
+    const prisma = getPrisma();
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { id: true, requesterId: true },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "Ticket not found" } });
+    }
+
+    let authorId: number;
+    if (req.user) {
+      if (req.user.role === "REQUESTER" && ticket.requesterId !== req.user.id) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Forbidden: You do not own this ticket" } });
+      }
+      authorId = req.user.id;
+    } else {
+      const requesterId = Number(req.body.requesterId || req.query.requesterId);
+      if (!requesterId || ticket.requesterId !== requesterId) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Forbidden: You do not own this ticket" } });
+      }
+      authorId = requesterId;
+    }
+
+    const comment = await prisma.publicComment.create({
+      data: {
+        ticketId,
+        authorId,
+        content: content.trim(),
+      },
+      include: {
+        author: { select: { id: true, name: true, role: true } },
+      },
+    });
+
+    return res.status(201).json(comment);
+  } catch (err) {
+    console.error("Failed to post comment:", err);
+    return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to post comment" } });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Internal Notes (GET /api/tickets/:id/notes) (FR-14, BR-05, AC-14)
+// ---------------------------------------------------------------------------
+app.get("/api/tickets/:id/notes", async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid ticket ID" } });
+    }
+
+    // Strictly forbidden for Requesters (BR-05, AC-14)
+    if (!req.user || req.user.role === "REQUESTER") {
+      return res.status(403).json({
+        error: {
+          code: "FORBIDDEN",
+          message: "Forbidden: Only IT Staff and Administrators may access internal notes",
+        },
+      });
+    }
+
+    const prisma = getPrisma();
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { id: true },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "Ticket not found" } });
+    }
+
+    const notes = await prisma.internalNote.findMany({
+      where: { ticketId },
+      orderBy: { createdAt: "asc" },
+      include: {
+        author: { select: { id: true, name: true, role: true } },
+      },
+    });
+
+    return res.status(200).json(notes);
+  } catch (err) {
+    console.error("Failed to fetch internal notes:", err);
+    return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to fetch internal notes" } });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Post Internal Note (POST /api/tickets/:id/notes) (FR-14, BR-05, BR-06, AC-14)
+// ---------------------------------------------------------------------------
+app.post("/api/tickets/:id/notes", async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid ticket ID" } });
+    }
+
+    // Strictly forbidden for Requesters (BR-05, AC-14)
+    if (!req.user || req.user.role === "REQUESTER") {
+      return res.status(403).json({
+        error: {
+          code: "FORBIDDEN",
+          message: "Forbidden: Only IT Staff and Administrators may create internal notes",
+        },
+      });
+    }
+
+    const { content } = req.body;
+    if (!content || typeof content !== "string" || content.trim().length === 0 || content.trim().length > 2000) {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Internal note content must be between 1 and 2,000 characters",
+        },
+      });
+    }
+
+    const prisma = getPrisma();
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { id: true },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "Ticket not found" } });
+    }
+
+    const note = await prisma.internalNote.create({
+      data: {
+        ticketId,
+        authorId: req.user.id,
+        content: content.trim(),
+      },
+      include: {
+        author: { select: { id: true, name: true, role: true } },
+      },
+    });
+
+    return res.status(201).json(note);
+  } catch (err) {
+    console.error("Failed to post internal note:", err);
+    return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to post internal note" } });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Problem Appears Resolved Indication (POST / PATCH /api/tickets/:id/resolve-indication) (FR-07, BR-07)
+// ---------------------------------------------------------------------------
+const handleResolveIndication = async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid ticket ID" } });
+    }
+
+    const prisma = getPrisma();
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      include: {
+        category: true,
+        relatedSystem: true,
+        requester: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "Ticket not found" } });
+    }
+
+    // Ownership verification: Requester can only toggle on their own ticket
+    if (req.user) {
+      if (req.user.role === "REQUESTER" && ticket.requesterId !== req.user.id) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Forbidden: You may only signal resolution on your own tickets" } });
+      }
+    } else {
+      const requesterId = Number(req.body.requesterId || req.query.requesterId);
+      if (!requesterId || ticket.requesterId !== requesterId) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Forbidden: You may only signal resolution on your own tickets" } });
+      }
+    }
+
+    const isResolved = req.body.isResolved !== undefined ? Boolean(req.body.isResolved) : true;
+
+    // BR-07: Updates problemResolvedReq flag, does NOT alter currentStatus
+    const updated = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        problemResolvedReq: isResolved,
+      },
+      include: {
+        category: true,
+        relatedSystem: true,
+        requester: { select: { id: true, name: true, email: true } },
+        attachments: { orderBy: { createdAt: "asc" } },
+        publicComments: {
+          orderBy: { createdAt: "asc" },
+          include: { author: { select: { id: true, name: true, role: true } } },
+        },
+      },
+    });
+
+    return res.status(200).json(updated);
+  } catch (err) {
+    console.error("Failed to update resolution indication:", err);
+    return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to update resolution indication" } });
+  }
+};
+
+app.post("/api/tickets/:id/resolve-indication", handleResolveIndication);
+app.patch("/api/tickets/:id/resolve-indication", handleResolveIndication);
+
 export default app;
+

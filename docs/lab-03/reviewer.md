@@ -26,7 +26,8 @@ Throughout the Lab 3 sprint, our team strictly enforces the engineering workflow
 | **Issue 1** | `feature/lab3-1-spec-contract` | #23 | [PR #23](https://github.com/Beethoven190/toktickit/pull/23) | @SANOP19 | **Approved** | @SANOP19 | `54cd8ff` |
 | **Issue 2** | `feature/lab3-2-auth-foundation` | #25 | [PR #25](https://github.com/Beethoven190/toktickit/pull/25) | @SANOP19 | **Approved** | @SANOP19 | `a4c5f7d` |
 | **Issue 3** | `feature/lab3-3-staff-queue` | #27 | [PR #27](https://github.com/Beethoven190/toktickit/pull/27) | @SANOP19 | **Approved** | @SANOP19 | `8d79c2a` |
-| **Issue 4** | `feature/lab3-4-staff-operations` | TBD | Pending PR | @SANOP19 | In Progress | @SANOP19 | TBD |
+| **Issue 4** | `feature/lab3-4-staff-operations` | #29 | [PR #29](https://github.com/Beethoven190/toktickit/pull/29) | @SANOP19 | **Approved** | @SANOP19 | `bd05a74` |
+| **Issue 5** | `feature/lab3-5-comments-notes` | #31 | [PR #31](https://github.com/Beethoven190/toktickit/pull/31) | @SANOP19 | Under Review | @SANOP19 | Pending Review |
 
 ### Detailed Evaluation of Author PRs:
 
@@ -78,6 +79,32 @@ Throughout the Lab 3 sprint, our team strictly enforces the engineering workflow
 - **Author Response (@Beethoven190):** Thank you @SANOP19 for the review and merge!
 - **Outcome:** Approved and merged into `lab3-staging` by @SANOP19 (commit `8d79c2a`).
 
+#### PR #29 (Issue 4: IT Staff Ticket Operations & Status Transitions)
+- **PR URL:** [https://github.com/Beethoven190/toktickit/pull/29](https://github.com/Beethoven190/toktickit/pull/29)
+- **Author Summary:** Implemented IT Staff ticket operations on individual tickets (`PATCH /api/staff/tickets/:id/claim`, `/assign`, `/priority`, `/status`) and `GET /api/staff/assignees`. Enforced state transition matrix, auto-advancing `NEW` to `OPEN` on claim, active staff validation on assign, independent IT priority adjustments, and mandatory resolution summary (>= 5 chars) on `RESOLVED`/`CLOSED`. Delivered Teacher Mockup 3 UI (`StaffTicketDetail.tsx`) and passed 116/116 tests.
+- **Reviewer Evaluation (@SANOP19):**
+  > "Summary & Highlights:
+  > - **Staff Operations API:** Verified `PATCH /api/staff/tickets/:id/claim` auto-advances `NEW` to `OPEN` (BR-09, AC-09). Assign validates active staff/admin and supports unassigning. IT priority updates independently of requester priority (AC-10).
+  > - **Status State Machine & Resolution Rule:** Permitted status transitions strictly enforced per BR-09, rejecting illegal transitions with 400 Bad Request. Mandatory resolution summary (>= 5 chars) enforced for `RESOLVED` and `CLOSED` (BR-10, AC-12).
+  > - **Frontend Polish (Teacher Mockup 3):** `StaffTicketDetail.tsx` delivers clean breadcrumbs, read-only field groups, interactive claim/assign/priority controls, and tab navigation.
+  > - **Test Coverage & Regression Safety:** 23 new backend integration tests and 8 frontend unit tests, maintaining 100% test pass rate across all 116 tests.
+  > 
+  > APPROVE @Beethoven190"
+- **Author Response (@Beethoven190):** Thank you @SANOP19 for reviewing and merging!
+- **Outcome:** Approved and merged into `lab3-staging` by @SANOP19 (commit `bd05a74`).
+
+#### PR #31 (Issue 5: Collaboration — Public Comments, Confidential Internal Notes, and Problem Resolution)
+- **PR URL:** [https://github.com/Beethoven190/toktickit/pull/31](https://github.com/Beethoven190/toktickit/pull/31)
+- **Author Summary:** Implemented bidirectional collaboration features between Requesters and IT Staff/Admin:
+  - **Public Comments (`GET/POST /api/tickets/:id/comments`):** Validates 1–2,000 characters, append-only without edits/deletes (BR-06), strictly isolates cross-requester access (403 Forbidden).
+  - **Confidential Internal Notes (`GET/POST /api/tickets/:id/notes`):** Strictly restricted to `STAFF` and `ADMIN` (AC-14), returning 403 Forbidden for `REQUESTER` without exposing metadata.
+  - **Problem Appears Resolved (`POST/PATCH /api/tickets/:id/resolve-indication`):** Allows ticket requester to toggle `problemResolvedReq: true/false` without altering official ticket status (BR-07).
+  - **Frontend UI & Badge Integration:** Added interactive comments thread and notes tab in `StaffTicketDetail.tsx`, comments thread and resolution toggle in `TicketDetail.tsx`, and `✓ Resolved` badge in `MyTickets.tsx`.
+  - **Automated Tests:** 135 passing tests (92 backend + 43 frontend, 100% pass rate with zero regression).
+- **Reviewer Evaluation (@SANOP19):** Pending review
+- **Author Response (@Beethoven190):** Pending review
+- **Outcome:** Submitted for review and merge into `lab3-staging` by @SANOP19.
+
 ---
 
 ## 3. PRs Reviewed & Merged by @Beethoven190 (As Reviewer)
@@ -87,8 +114,12 @@ As part of peer collaboration, @Beethoven190 performs code reviews and executes 
 | Author | Repository | PR # | Issue Reviewed | Review Decision | Merged By | Merge Commit |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **@SANOP19** | SANOP19/toktickit | [PR #22](https://github.com/SANOP19/toktickit/pull/22) | Issue 1: Sprint 3 Engineering Contract Documentation | **Approved** | @Beethoven190 | `7bfa69b` |
-| **@SANOP19** | SANOP19/toktickit | [PR #25](https://github.com/SANOP19/toktickit/pull/25) | Issue 2: Authentication Foundation & User Migration | **Approved** | @Beethoven190 | In progress |
+| **@SANOP19** | SANOP19/toktickit | [PR #25](https://github.com/SANOP19/toktickit/pull/25) | Issue 2: Authentication Foundation & User Migration | **Approved** | @Beethoven190 | Merged |
+| **@SANOP19** | SANOP19/toktickit | [PR #27](https://github.com/SANOP19/toktickit/pull/27) | Issue 3: Requester Continuation & Public Comments | **Approved** | @Beethoven190 | Merged |
+| **@SANOP19** | SANOP19/toktickit | [PR #29](https://github.com/SANOP19/toktickit/pull/29) | Issue 4: IT Staff Ticket Queue, Filters & Responsive UI | **Approved** | @Beethoven190 | Merged |
+| **@SANOP19** | SANOP19/toktickit | [PR #31](https://github.com/SANOP19/toktickit/pull/31) | Issue 5: IT Staff Ticket Detail, Operational Controls & Internal Notes | **Approved** | @Beethoven190 | Pending Merge |
 | **@pimchayasupr-hash** | pimchayasupr-hash/toktickit | [PR #36](https://github.com/pimchayasupr-hash/toktickit/pull/36) | Lab 3 Full Stack Implementation & Integration | **Reviewed** | Collaborative | In progress |
+| **@FramePongrit** | FramePongrit/toktickit | [PR #64](https://github.com/FramePongrit/toktickit/pull/64) | Issue 1: Sprint 3 Engineering Contract & Traceability | **Approved** | @Beethoven190 | Pending Merge |
 
 ---
 
