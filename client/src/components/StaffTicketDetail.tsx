@@ -1,3 +1,4 @@
+import { ActionsTakenSection } from "./ActionsTakenSection.js";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   StaffQueueTicket,
@@ -576,6 +577,17 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({
           </div>
         </div>
       </div>
+
+      
+      {/* Actions Taken Work Tracking (Issue 3, Screen 8.3) */}
+      <ActionsTakenSection
+        ticketId={ticket.id}
+        actions={ticket.actions || []}
+        canManage={true}
+        currentUserName={assignees.find((a) => a.id === currentUserId)?.name || "Current Staff"}
+        isTicketTerminal={ticket.currentStatus === "CLOSED" || ticket.currentStatus === "CANCELLED"}
+        onActionsUpdated={loadData}
+      />
 
       {/* Tabs Section: Collaboration & Attachments (Teacher Mockup 3) */}
       <div className="card shadow-sm border-0" style={{ borderRadius: 10, background: "#FFFFFF" }}>
