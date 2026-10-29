@@ -419,6 +419,13 @@ app.get("/api/tickets/:id", async (req: Request, res: Response) => {
           orderBy: { createdAt: "asc" },
           include: { author: { select: { id: true, name: true, role: true } } },
         },
+        actions: {
+          orderBy: { actionDateTime: "asc" },
+          include: {
+            performedBy: { select: { id: true, name: true, email: true, role: true } },
+          },
+        },
+
       },
     });
 
@@ -883,6 +890,100 @@ const handleResolveIndication = async (req: Request, res: Response) => {
 
 app.post("/api/tickets/:id/resolve-indication", handleResolveIndication);
 app.patch("/api/tickets/:id/resolve-indication", handleResolveIndication);
+
+
+// ---------------------------------------------------------------------------
+// Issue 2 (Lab 4) — Requester Read-Only Actions Taken list (AC-03, FR-04, BR-06)
+// ---------------------------------------------------------------------------
+app.get("/api/tickets/:id/actions", async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Ticket ID must be a valid integer",
+        },
+      });
+    }
+
+    const prisma = getPrisma();
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { id: true, requesterId: true },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        error: {
+          code: "NOT_FOUND",
+          message: "Ticket not found",
+        },
+      });
+    }
+
+    // Role-based authorization & ownership protection (AC-03, BR-06):
+    // Requesters can only view Actions Taken on their own tickets.
+    if (req.user) {
+      if (req.user.role === "REQUESTER" && ticket.requesterId !== req.user.id) {
+        return res.status(403).json({
+          error: {
+            code: "FORBIDDEN_RESOURCE",
+            message: "Forbidden: You do not have permission to view Actions Taken for this ticket",
+          },
+        });
+      }
+    } else {
+      const requesterId = Number(req.query.requesterId);
+      if (!requesterId || ticket.requesterId !== requesterId) {
+        return res.status(403).json({
+          error: {
+            code: "FORBIDDEN_RESOURCE",
+            message: "Forbidden: You do not have permission to view Actions Taken for this ticket",
+          },
+        });
+      }
+    }
+
+    const actions = await prisma.actionTaken.findMany({
+      where: { ticketId },
+      orderBy: { actionDateTime: "asc" },
+      include: {
+        performedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    return res.status(200).json({
+      actions,
+      total: actions.length,
+    });
+  } catch (err) {
+    console.error("Failed to fetch requester ticket actions:", err);
+    return res.status(500).json({
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "Failed to fetch actions taken",
+      },
+    });
+  }
+});
+
+// Guard: Requesters are strictly forbidden from creating Actions Taken (BR-06, AC-03)
+app.post("/api/tickets/:id/actions", (req: Request, res: Response) => {
+  return res.status(403).json({
+    error: {
+      code: "FORBIDDEN",
+      message: "Forbidden: Requesters cannot create or modify Actions Taken. Only IT Staff and Administrators may record actions.",
+    },
+  });
+});
 
 export default app;
 
