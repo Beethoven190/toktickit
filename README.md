@@ -1,9 +1,8 @@
 # TokTickIT — IT Service Desk
 
-TokTickIT is an IT service desk web application developed as part of **CPE 334: Introduction to Software Engineering in the Age of AI Agents** (Lab 1: Full-Stack Hello World Starter). 
+TokTickIT is an IT service desk web application developed as part of **CPE 334: Introduction to Software Engineering in the Age of AI Agents**.
 
-The goal of this vertical slice is to integrate and verify all layers of the modern full-stack web architecture:
-**React UI → Express REST API → Prisma ORM → PostgreSQL Database**
+**Lab 3 Increment: Users, Roles, IT Staff Ticketing, and Admin Screens** replaces the temporary Development Requester selector with secure authentication, mandatory first-login password quarantine, server-side role-based access control (RBAC), an operational IT Staff Ticket Queue with multi-criteria filtering and sorting, IT Staff Ticket Detail with state machine transitions, bidirectional Public Comments and confidential Internal Notes, and an Administrator User Management module under the **Zen Green** design language (`#006B3C`).
 
 ---
 
@@ -11,11 +10,11 @@ The goal of this vertical slice is to integrate and verify all layers of the mod
 
 | Area | Technology Stack |
 |---|---|
-| **Frontend** | React (v18), TypeScript, Vite, Bootstrap 5 |
-| **Backend** | Node.js, Express, TypeScript, tsx |
+| **Frontend** | React (v18), TypeScript, Vite, Bootstrap 5 (Zen Green Theme) |
+| **Backend** | Node.js, Express, TypeScript, tsx, JWT, bcryptjs |
 | **Database & ORM** | PostgreSQL, Prisma ORM |
-| **Testing** | Vitest, Supertest, React Testing Library |
-| **Workflow** | Git Flow, GitHub Issues & Projects, Kanban |
+| **Testing** | Vitest (API & Component), Supertest, React Testing Library, Playwright (E2E) |
+| **Workflow** | Spec DD, Test DD, Trunk-Based Staging Flow, Linked GitHub Issues & Kanban |
 
 ---
 
@@ -23,30 +22,53 @@ The goal of this vertical slice is to integrate and verify all layers of the mod
 
 ```text
 toktickit/
-├── client/                 # Frontend application
-│   ├── src/                # UI components, React hooks, API client
-│   ├── tests/              # Frontend unit and component tests (Vitest)
-│   │   └── lab-01/
-│   ├── .env.example        # Frontend environment template
-│   ├── index.html
-│   ├── package.json
-│   └── vite.config.ts
-├── server/                 # Backend REST API
-│   ├── prisma/             # Prisma schema and seed scripts
-│   ├── src/                # Express application, routes, controllers
-│   ├── tests/              # Backend integration tests (Supertest + Vitest)
-│   │   └── lab-01/
-│   ├── .env.example        # Backend environment template
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── vitest.config.ts
-├── docs/                   # Course documentation and review records
-│   └── lab-01/
-│       ├── ai_use.md       # AI agent usage log and reflections
-│       ├── reviewer.md     # Peer review records
-│       └── tests.md        # Test matrix and verification evidence
-├── .gitignore
-└── README.md
+├── client/                     # Frontend application (React + Vite + TS)
+│   ├── src/
+│   │   ├── api.ts              # API client methods with JWT Bearer auth
+│   │   ├── App.tsx             # Main shell & multi-role tab navigation
+│   │   ├── context/            # AuthContext (JWT session management)
+│   │   └── components/         # LoginForm, ChangePasswordModal, StaffTicketQueue,
+│   │                           # StaffTicketDetail, UserManagement, MyTickets, CreateTicket
+│   └── tests/                  # Frontend component test suites (Vitest + RTL)
+│       ├── lab-01/
+│       ├── lab-02/
+│       └── lab-03/
+├── server/                     # Backend application (Express + Prisma)
+│   ├── prisma/
+│   │   ├── schema.prisma       # Unified User, Ticket, Attachment, Comment, Note models
+│   │   ├── migrations/         # Prisma database schema migrations
+│   │   └── seed.ts             # Seeded accounts with bcrypt passwords
+│   ├── src/
+│   │   ├── middleware/         # auth.middleware.ts, rbac.middleware.ts
+│   │   └── routes/             # auth, staff-queue, staff-tickets, comments-notes, admin-users
+│   └── tests/                  # Backend API & integration test suites (Supertest + Vitest)
+│       ├── lab-01/
+│       ├── lab-02/
+│       └── lab-03/
+├── docs/                       # Course engineering contracts & documentation
+│   └── lab-03/
+│       ├── specification.md    # FR-01..19, BR-01..18, Role Matrix, DoD
+│       ├── api-spec.md         # REST API schema and endpoint contracts
+│       ├── ui-spec.md          # Zen Green tokens & responsive layouts
+│       ├── tests.md            # Traceability matrix (AC-01..20) & test results
+│       ├── reviewer.md         # Peer review logs & merge authority records
+│       ├── ai-use.md           # Prompt history and critical reflections
+│       └── Lab3_Final_Report.md# Complete Lab 3 report across Answers 1–9
+├── e2e/                        # Playwright multi-role End-to-End test suites
+│   └── lab-03/
+│       ├── authentication.spec.ts
+│       ├── staff-ticket-flow.spec.ts
+│       └── user-administration.spec.ts
+├── artifacts/                  # Submission screenshots
+│   └── lab-03/
+│       └── screenshots/
+│           ├── authentication/
+│           ├── staff-queue/
+│           ├── staff-ticket-detail/
+│           ├── user-management/
+│           └── responsive/
+├── .gitignore                  # Git ignore rules (includes Playwright artifacts)
+└── README.md                   # Project documentation
 ```
 
 ---
@@ -54,7 +76,7 @@ toktickit/
 ## 🚀 Getting Started
 
 ### 1. Prerequisites
-- **Node.js** (v18.x or later)
+- **Node.js** (v20.x or later)
 - **npm** (v9.x or later)
 - **PostgreSQL** database server running locally (default port: `5432`)
 
@@ -62,68 +84,47 @@ toktickit/
 
 ### 2. Backend Setup (`server/`)
 
-1. Open your terminal and change directory into `server/`:
+1. Open your terminal and navigate to `server/`:
    ```bash
    cd server
-   ```
-
-2. Install backend dependencies:
-   ```bash
    npm install
    ```
 
-3. Configure environment variables:
+2. Configure environment variables:
    - Copy `.env.example` to `.env`:
      ```bash
      cp .env.example .env
      ```
-   - Verify `DATABASE_URL` in `.env` matches your local PostgreSQL credentials:
+   - Verify `DATABASE_URL` matches your local PostgreSQL credentials:
      ```env
      DATABASE_URL="postgresql://toktickit:toktickit@localhost:5432/toktickit?schema=public"
      PORT=3000
+     JWT_SECRET="toktickit_jwt_super_secret_lab3"
      ```
 
-4. Database Migrations & Seeding (for subsequent issues):
-   - Run Prisma migrations:
-     ```bash
-     npm run prisma:migrate
-     ```
-   - Seed initial category data:
-     ```bash
-     npm run prisma:seed
-     ```
+3. Run Prisma migrations and seed users:
+   ```bash
+   npm run prisma:migrate
+   npm run prisma:seed
+   ```
 
-5. Start the backend development server:
+4. Start backend server:
    ```bash
    npm run dev
    ```
-   *The Express REST API will listen on `http://localhost:3000`.*
+   *Express REST API will listen on `http://localhost:3000`.*
 
 ---
 
 ### 3. Frontend Setup (`client/`)
 
-1. In a separate terminal, change directory into `client/`:
+1. In a separate terminal, navigate to `client/`:
    ```bash
    cd client
-   ```
-
-2. Install frontend dependencies:
-   ```bash
    npm install
    ```
 
-3. Configure environment variables:
-   - Copy `.env.example` to `.env`:
-     ```bash
-     cp .env.example .env
-     ```
-   - Default backend endpoint:
-     ```env
-     VITE_API_URL="http://localhost:3000"
-     ```
-
-4. Start the frontend development server:
+2. Start frontend dev server:
    ```bash
    npm run dev
    ```
@@ -133,31 +134,42 @@ toktickit/
 
 ## 🧪 Automated Testing
 
-### Backend Integration Tests (Supertest + Vitest)
-In `server/`:
+### 1. Backend Integration Tests (`server/`)
 ```bash
-npm run test
+cd server
+npm test
 ```
+*Result: 110 passed across 12 test files (100% pass rate).*
 
-### Frontend Unit & Component Tests (Vitest)
-In `client/`:
+### 2. Frontend Component Tests (`client/`)
 ```bash
-npm run test
+cd client
+npm test
+```
+*Result: 50 passed across 11 test files (100% pass rate).*
+
+### 3. Combined Unit & Integration Suite
+- **Total Tests Passing:** **160 / 160 (100% pass rate, 0 regressions)**
+
+### 4. Playwright End-to-End Testing (`e2e/`)
+```bash
+npx playwright test e2e/lab-03/
 ```
 
 ---
 
-## 📡 REST API Specifications
+## 🔐 Role-Based Access Control (RBAC) Summary
 
-| Method | Endpoint | Description | Expected Response |
-|---|---|---|---|
-| `GET` | `/api/health` | Health check endpoint | `200 OK` `{ "status": "ok", "service": "TokTickIT API" }` |
-| `GET` | `/api/categories` | Retrieve request categories list | `200 OK` `[{ "id": 1, "name": "Account and Access" }, ...]` |
+| Role | Key Permissions |
+|---|---|
+| **Requester** | Create tickets; view/manage owned tickets; append Public Comments; indicate Problem Appears Resolved. Forbidden from IT Queue, Internal Notes, and Admin APIs. |
+| **IT Staff** | View shared IT Ticket Queue; claim/assign tickets; adjust IT Priority; progress ticket status; record confidential Internal Notes; append Public Comments. |
+| **Administrator** | Manage user accounts; create users; edit roles/active status; reset initial passwords; protected by self-deactivation and last-admin safety guards. |
 
 ---
 
-## 🌿 Git Flow & Branch Strategy
+## 🌿 Git Flow & Branching Strategy
 
-- **`main`**: Production-ready release branch.
-- **`lab1-staging`**: Integration branch for Lab 1.
-- **`feature/<issue-number>-<feature-name>`**: Individual feature branches created from `lab1-staging` and merged via peer-reviewed Pull Requests.
+- **`main`**: Production release branch.
+- **`lab3-staging`**: Staging integration branch for Lab 3.
+- **`feature/lab3-X-...`**: Feature branches branched from `lab3-staging` and merged via peer-reviewed Pull Requests (Rule 1: Reviewer clicks merge).

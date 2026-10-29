@@ -139,13 +139,13 @@ export default function StaffTicketQueue({ onSelectTicket }: StaffTicketQueuePro
     if (!prio) return <span className="text-muted small">-</span>;
     switch (prio.toUpperCase()) {
       case "HIGH":
-        return <span className="badge bg-danger text-white rounded-pill px-2 py-1">High</span>;
+        return <span className="badge bg-danger text-white rounded-pill" style={{ fontSize: "0.7rem", padding: "2px 6px" }}>High</span>;
       case "MEDIUM":
-        return <span className="badge bg-warning text-dark rounded-pill px-2 py-1">Medium</span>;
+        return <span className="badge bg-warning text-dark rounded-pill" style={{ fontSize: "0.7rem", padding: "2px 6px" }}>Medium</span>;
       case "LOW":
-        return <span className="badge bg-secondary text-white rounded-pill px-2 py-1">Low</span>;
+        return <span className="badge bg-secondary text-white rounded-pill" style={{ fontSize: "0.7rem", padding: "2px 6px" }}>Low</span>;
       default:
-        return <span className="badge bg-light text-dark rounded-pill px-2 py-1">{prio}</span>;
+        return <span className="badge bg-light text-dark rounded-pill" style={{ fontSize: "0.7rem", padding: "2px 6px" }}>{prio}</span>;
     }
   }
 
@@ -153,49 +153,49 @@ export default function StaffTicketQueue({ onSelectTicket }: StaffTicketQueuePro
     switch (status.toUpperCase()) {
       case "NEW":
         return (
-          <span className="badge rounded-pill px-2 py-1" style={{ backgroundColor: "#EAF6EF", color: "#006B3C", border: "1px solid #A7F3D0" }}>
+          <span className="badge rounded-pill" style={{ backgroundColor: "#EAF6EF", color: "#006B3C", border: "1px solid #A7F3D0", fontSize: "0.7rem", padding: "2px 6px" }}>
             New
           </span>
         );
       case "OPEN":
         return (
-          <span className="badge rounded-pill px-2 py-1" style={{ backgroundColor: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}>
+          <span className="badge rounded-pill" style={{ backgroundColor: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE", fontSize: "0.7rem", padding: "2px 6px" }}>
             Open
           </span>
         );
       case "IN_PROGRESS":
         return (
-          <span className="badge rounded-pill px-2 py-1" style={{ backgroundColor: "#EAF6EF", color: "#0B7A46", border: "1px solid #6EE7B7" }}>
+          <span className="badge rounded-pill" style={{ backgroundColor: "#EAF6EF", color: "#0B7A46", border: "1px solid #6EE7B7", fontSize: "0.7rem", padding: "2px 6px" }}>
             In Progress
           </span>
         );
       case "WAITING_FOR_REQUESTER":
       case "PENDING":
         return (
-          <span className="badge rounded-pill px-2 py-1" style={{ backgroundColor: "#FEF3C7", color: "#B45309", border: "1px solid #FDE68A" }}>
+          <span className="badge rounded-pill" style={{ backgroundColor: "#FEF3C7", color: "#B45309", border: "1px solid #FDE68A", fontSize: "0.7rem", padding: "2px 6px" }}>
             Waiting
           </span>
         );
       case "RESOLVED":
         return (
-          <span className="badge rounded-pill px-2 py-1" style={{ backgroundColor: "#CCFBF1", color: "#0F766E", border: "1px solid #99F6E4" }}>
+          <span className="badge rounded-pill" style={{ backgroundColor: "#CCFBF1", color: "#0F766E", border: "1px solid #99F6E4", fontSize: "0.7rem", padding: "2px 6px" }}>
             Resolved
           </span>
         );
       case "CLOSED":
         return (
-          <span className="badge rounded-pill px-2 py-1" style={{ backgroundColor: "#F1F5F9", color: "#475569", border: "1px solid #CBD5E1" }}>
+          <span className="badge rounded-pill" style={{ backgroundColor: "#F1F5F9", color: "#475569", border: "1px solid #CBD5E1", fontSize: "0.7rem", padding: "2px 6px" }}>
             Closed
           </span>
         );
       case "CANCELLED":
         return (
-          <span className="badge rounded-pill px-2 py-1" style={{ backgroundColor: "#FFE4E6", color: "#BE123C", border: "1px solid #FECDD3" }}>
+          <span className="badge rounded-pill" style={{ backgroundColor: "#FFE4E6", color: "#BE123C", border: "1px solid #FECDD3", fontSize: "0.7rem", padding: "2px 6px" }}>
             Cancelled
           </span>
         );
       default:
-        return <span className="badge bg-light text-dark rounded-pill px-2 py-1">{status}</span>;
+        return <span className="badge bg-light text-dark rounded-pill" style={{ fontSize: "0.7rem", padding: "2px 6px" }}>{status}</span>;
     }
   }
 
@@ -405,46 +405,52 @@ export default function StaffTicketQueue({ onSelectTicket }: StaffTicketQueuePro
           <>
             {/* Desktop Table Presentation (d-none d-md-block) */}
             <div className="table-responsive d-none d-md-block">
-              <table className="table table-hover align-middle mb-0" data-testid="staff-queue-table">
+              <table
+                className="table table-hover align-middle mb-0"
+                style={{ fontSize: "0.82rem", tableLayout: "fixed", width: "100%" }}
+                data-testid="staff-queue-table"
+              >
                 <thead style={{ backgroundColor: "#F8FAFC" }}>
-                  <tr className="text-secondary small fw-semibold text-uppercase" style={{ letterSpacing: "0.03em" }}>
+                  <tr className="text-secondary small fw-semibold text-uppercase" style={{ letterSpacing: "0.02em", fontSize: "0.74rem" }}>
                     <th
-                      style={{ cursor: "pointer", width: "16%" }}
+                      style={{ cursor: "pointer", width: "14%", paddingLeft: "8px", paddingRight: "4px" }}
                       onClick={() => toggleSort("ticketNumber")}
-                      className="ps-3"
                     >
                       Ticket No. {sortField === "ticketNumber" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
                     </th>
                     <th
-                      style={{ cursor: "pointer", width: "14%" }}
+                      style={{ cursor: "pointer", width: "12%", paddingLeft: "4px", paddingRight: "4px" }}
                       onClick={() => toggleSort("createdAt")}
                     >
                       Created {sortField === "createdAt" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
                     </th>
-                    <th style={{ width: "24%" }}>Summary</th>
+                    <th style={{ width: "24%", paddingLeft: "4px", paddingRight: "4px" }}>
+                      Summary
+                    </th>
                     <th
-                      style={{ cursor: "pointer", width: "12%" }}
+                      style={{ cursor: "pointer", width: "13%", paddingLeft: "4px", paddingRight: "4px" }}
                       onClick={() => toggleSort("category")}
                     >
                       Category {sortField === "category" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
                     </th>
-                    <th style={{ width: "10%" }}>Req. Prio</th>
+                    <th style={{ width: "9%", paddingLeft: "4px", paddingRight: "4px", textAlign: "center" }}>
+                      Req. Prio
+                    </th>
                     <th
-                      style={{ cursor: "pointer", width: "10%" }}
+                      style={{ cursor: "pointer", width: "9%", paddingLeft: "4px", paddingRight: "4px", textAlign: "center" }}
                       onClick={() => toggleSort("itPriority")}
                     >
                       IT Prio {sortField === "itPriority" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
                     </th>
                     <th
-                      style={{ cursor: "pointer", width: "11%" }}
+                      style={{ cursor: "pointer", width: "9%", paddingLeft: "4px", paddingRight: "4px", textAlign: "center" }}
                       onClick={() => toggleSort("status")}
                     >
                       Status {sortField === "status" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
                     </th>
                     <th
-                      style={{ cursor: "pointer", width: "13%" }}
+                      style={{ cursor: "pointer", width: "10%", paddingLeft: "4px", paddingRight: "8px" }}
                       onClick={() => toggleSort("owner")}
-                      className="pe-3"
                     >
                       Owner {sortField === "owner" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
                     </th>
@@ -458,45 +464,51 @@ export default function StaffTicketQueue({ onSelectTicket }: StaffTicketQueuePro
                       onClick={() => onSelectTicket(t)}
                       data-testid={`ticket-row-${t.id}`}
                     >
-                      <td className="ps-3 font-monospace fw-bold" style={{ color: "#006B3C" }}>
+                      <td className="ps-2 font-monospace fw-bold" style={{ color: "#006B3C", wordBreak: "break-all", fontSize: "0.76rem" }}>
                         {t.ticketNumber}
                       </td>
-                      <td className="text-muted small">
+                      <td className="text-muted" style={{ fontSize: "0.75rem", whiteSpace: "nowrap" }}>
                         {formatDate(t.createdAt)}
                       </td>
-                      <td>
+                      <td style={{ paddingLeft: "4px", paddingRight: "4px" }}>
                         <div
                           className="text-truncate fw-semibold"
-                          style={{ maxWidth: 320, color: "#1E293B" }}
+                          style={{ maxWidth: 175, color: "#1E293B", fontSize: "0.8rem" }}
                           title={t.summary}
                         >
                           {t.summary}
                         </div>
-                        <div className="text-muted small" style={{ fontSize: "0.75rem" }}>
+                        <div className="text-muted text-truncate" style={{ fontSize: "0.72rem", maxWidth: 175 }}>
                           by {t.requester?.name || "Unknown"}
                         </div>
                       </td>
-                      <td className="small text-secondary">
+                      <td className="text-secondary" style={{ fontSize: "0.75rem", wordBreak: "break-word", paddingLeft: "4px", paddingRight: "4px" }}>
                         {t.category?.name || "-"}
                       </td>
-                      <td>{renderPriorityBadge(t.requestedPriority)}</td>
-                      <td>{renderPriorityBadge(t.itPriority)}</td>
-                      <td>{renderStatusBadge(t.currentStatus)}</td>
-                      <td className="pe-3">
+                      <td style={{ textAlign: "center", paddingLeft: "2px", paddingRight: "2px" }}>
+                        {renderPriorityBadge(t.requestedPriority)}
+                      </td>
+                      <td style={{ textAlign: "center", paddingLeft: "2px", paddingRight: "2px" }}>
+                        {renderPriorityBadge(t.itPriority)}
+                      </td>
+                      <td style={{ textAlign: "center", paddingLeft: "2px", paddingRight: "2px" }}>
+                        {renderStatusBadge(t.currentStatus)}
+                      </td>
+                      <td className="pe-2" style={{ paddingLeft: "4px" }}>
                         {t.owner ? (
                           <div className="d-flex align-items-center gap-1">
                             <span
                               className="badge rounded-circle text-white d-inline-flex align-items-center justify-content-center"
-                              style={{ width: 22, height: 22, backgroundColor: "#006B3C", fontSize: "0.65rem" }}
+                              style={{ width: 20, height: 20, backgroundColor: "#006B3C", fontSize: "0.6rem", flexShrink: 0 }}
                             >
                               {t.owner.name.charAt(0).toUpperCase()}
                             </span>
-                            <span className="small fw-semibold text-truncate" style={{ maxWidth: 90 }}>
+                            <span className="fw-semibold text-truncate" style={{ maxWidth: 65, fontSize: "0.74rem" }}>
                               {t.owner.name.split(" ")[0]}
                             </span>
                           </div>
                         ) : (
-                          <span className="badge bg-light text-secondary border rounded-pill px-2 py-1 small">
+                          <span className="badge bg-light text-secondary border rounded-pill px-1 py-1" style={{ fontSize: "0.68rem" }}>
                             Unassigned
                           </span>
                         )}

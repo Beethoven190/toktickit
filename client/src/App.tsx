@@ -103,38 +103,120 @@ function AppContent() {
       : "Requester";
 
   return (
-    <div className="min-vh-100" style={{ backgroundColor: "#F5F7F6" }}>
+    <div className="min-vh-100" style={{ backgroundColor: "#F5F7F6", overflowX: "hidden" }}>
       {/* Top Application Shell Navbar (Zen Green Theme) */}
       <nav
-        className="navbar navbar-expand navbar-dark px-3 py-2 shadow-sm"
+        className="navbar navbar-dark px-2 px-md-3 py-2 shadow-sm"
         style={{ backgroundColor: "#006B3C" }}
       >
-        <div className="container-fluid">
+        <div className="container-fluid d-flex flex-wrap align-items-center justify-content-between">
           {/* Logo */}
           <span
             className="navbar-brand fw-bold d-flex align-items-center mb-0"
-            style={{ cursor: "pointer" }}
+            style={{ cursor: "pointer", fontSize: "1.15rem" }}
             onClick={() => handleNavigate("my-tickets")}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="white" viewBox="0 0 16 16" className="me-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16" className="me-2">
               <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
               <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
             </svg>
             TokTickIT
           </span>
 
-          <div className="collapse navbar-collapse">
-            <ul className="navbar-nav me-auto mb-0">
+          {/* Profile Dropdown (Top right on mobile, right on desktop) */}
+          <div className="position-relative ms-auto order-md-3">
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-light d-flex align-items-center gap-1 gap-md-2 rounded-pill px-2 px-md-3"
+              onClick={() => setProfileOpen((o) => !o)}
+              data-testid="profile-dropdown-btn"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.025 10 8 10c-2.026 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
+              </svg>
+              <span style={{ maxWidth: 85, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.85rem" }}>
+                {user.name.split(" ")[0]}
+              </span>
+              <span className="badge bg-light text-dark rounded-pill px-1 px-md-2 py-0" style={{ fontSize: "0.65rem" }}>
+                {roleLabel}
+              </span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
+              </svg>
+            </button>
+
+            {profileOpen && (
+              <>
+                <div
+                  style={{ position: "fixed", inset: 0, zIndex: 1040 }}
+                  onClick={() => setProfileOpen(false)}
+                />
+                <ul
+                  className="dropdown-menu dropdown-menu-end shadow border-0 show"
+                  style={{ minWidth: 240, position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 1050 }}
+                >
+                  <li>
+                    <div className="px-3 py-2 border-bottom">
+                      <div className="fw-bold small" style={{ color: "#006B3C" }}>{user.name}</div>
+                      <div className="text-muted small" style={{ fontSize: "0.75rem" }}>{user.email}</div>
+                      <span className={`badge border mt-1 ${roleBadgeColor}`} style={{ fontSize: "0.7rem" }}>
+                        {roleLabel}
+                      </span>
+                    </div>
+                  </li>
+                  <li>
+                    <button
+                      className="dropdown-item small d-flex align-items-center gap-2"
+                      onClick={() => {
+                        setProfileOpen(false);
+                        setShowPasswordChangeModal(true);
+                      }}
+                    >
+                      🔑 Change Password
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="dropdown-item small d-flex align-items-center gap-2"
+                      onClick={() => {
+                        setProfileOpen(false);
+                        setShowSystemCheck(true);
+                        setSelectedTicketId(null);
+                      }}
+                    >
+                      🖥️ System Check (Lab 1)
+                    </button>
+                  </li>
+                  <li><hr className="dropdown-divider my-1" /></li>
+                  <li>
+                    <button
+                      className="dropdown-item small text-danger d-flex align-items-center gap-2"
+                      onClick={() => {
+                        setProfileOpen(false);
+                        logout();
+                      }}
+                    >
+                      🚪 Sign Out
+                    </button>
+                  </li>
+                </ul>
+              </>
+            )}
+          </div>
+
+          {/* Navigation Tabs (wraps to full row on mobile with clean overflow scroll, inline on desktop) */}
+          <div className="w-100 w-md-auto order-md-2 mt-2 mt-md-0 overflow-x-auto no-scrollbar">
+            <ul className="navbar-nav flex-row flex-nowrap gap-1 mb-0 py-0" style={{ overflowX: "auto" }}>
               {/* Role: Requester / Staff / Admin Tabs */}
               <li className="nav-item">
                 <button
                   type="button"
-                  className={`btn btn-link nav-link px-3 py-1 ${
+                  className={`btn btn-link nav-link px-2 px-md-3 py-1 text-nowrap ${
                     (activeTab === "my-tickets" || selectedTicketId !== null) && !showSystemCheck
                       ? "active fw-bold text-white border-bottom border-white border-2"
                       : "text-white-50"
                   }`}
-                  style={{ textDecoration: "none" }}
+                  style={{ textDecoration: "none", fontSize: "0.9rem" }}
                   onClick={() => handleNavigate("my-tickets")}
                 >
                   📋 My Tickets
@@ -143,12 +225,12 @@ function AppContent() {
               <li className="nav-item">
                 <button
                   type="button"
-                  className={`btn btn-link nav-link px-3 py-1 ${
+                  className={`btn btn-link nav-link px-2 px-md-3 py-1 text-nowrap ${
                     activeTab === "create-ticket" && selectedTicketId === null && !showSystemCheck
                       ? "active fw-bold text-white border-bottom border-white border-2"
                       : "text-white-50"
                   }`}
-                  style={{ textDecoration: "none" }}
+                  style={{ textDecoration: "none", fontSize: "0.9rem" }}
                   onClick={() => handleNavigate("create-ticket")}
                 >
                   ➕ Create Ticket
@@ -160,12 +242,12 @@ function AppContent() {
                 <li className="nav-item">
                   <button
                     type="button"
-                    className={`btn btn-link nav-link px-3 py-1 ${
+                    className={`btn btn-link nav-link px-2 px-md-3 py-1 text-nowrap ${
                       activeTab === "queue" && !showSystemCheck
                         ? "active fw-bold text-white border-bottom border-white border-2"
                         : "text-white-50"
                     }`}
-                    style={{ textDecoration: "none" }}
+                    style={{ textDecoration: "none", fontSize: "0.9rem" }}
                     onClick={() => handleNavigate("queue")}
                   >
                     📄 My Queue
@@ -178,12 +260,12 @@ function AppContent() {
                 <li className="nav-item">
                   <button
                     type="button"
-                    className={`btn btn-link nav-link px-3 py-1 ${
+                    className={`btn btn-link nav-link px-2 px-md-3 py-1 text-nowrap ${
                       activeTab === "admin-users" && !showSystemCheck
                         ? "active fw-bold text-white border-bottom border-white border-2"
                         : "text-white-50"
                     }`}
-                    style={{ textDecoration: "none" }}
+                    style={{ textDecoration: "none", fontSize: "0.9rem" }}
                     onClick={() => handleNavigate("admin-users")}
                   >
                     ⚙️ User Management
@@ -191,87 +273,6 @@ function AppContent() {
                 </li>
               )}
             </ul>
-
-            {/* Profile Dropdown */}
-            <div className="position-relative">
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-light d-flex align-items-center gap-2 rounded-pill px-3"
-                onClick={() => setProfileOpen((o) => !o)}
-                data-testid="profile-dropdown-btn"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.025 10 8 10c-2.026 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
-                </svg>
-                <span style={{ maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {user.name.split(" ")[0]}
-                </span>
-                <span className="badge bg-light text-dark rounded-pill px-2 py-0 small" style={{ fontSize: "0.7rem" }}>
-                  {roleLabel}
-                </span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
-                </svg>
-              </button>
-
-              {profileOpen && (
-                <>
-                  <div
-                    style={{ position: "fixed", inset: 0, zIndex: 1040 }}
-                    onClick={() => setProfileOpen(false)}
-                  />
-                  <ul
-                    className="dropdown-menu dropdown-menu-end shadow border-0 show"
-                    style={{ minWidth: 240, position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 1050 }}
-                  >
-                    <li>
-                      <div className="px-3 py-2 border-bottom">
-                        <div className="fw-bold small" style={{ color: "#006B3C" }}>{user.name}</div>
-                        <div className="text-muted small" style={{ fontSize: "0.75rem" }}>{user.email}</div>
-                        <span className={`badge border mt-1 ${roleBadgeColor}`} style={{ fontSize: "0.7rem" }}>
-                          {roleLabel}
-                        </span>
-                      </div>
-                    </li>
-                    <li>
-                      <button
-                        className="dropdown-item small d-flex align-items-center gap-2"
-                        onClick={() => {
-                          setProfileOpen(false);
-                          setShowPasswordChangeModal(true);
-                        }}
-                      >
-                        🔑 Change Password
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        className="dropdown-item small d-flex align-items-center gap-2"
-                        onClick={() => {
-                          setProfileOpen(false);
-                          setShowSystemCheck(true);
-                          setSelectedTicketId(null);
-                        }}
-                      >
-                        🖥️ System Check (Lab 1)
-                      </button>
-                    </li>
-                    <li><hr className="dropdown-divider my-1" /></li>
-                    <li>
-                      <button
-                        className="dropdown-item small text-danger d-flex align-items-center gap-2"
-                        onClick={() => {
-                          setProfileOpen(false);
-                          logout();
-                        }}
-                      >
-                        🚪 Sign Out
-                      </button>
-                    </li>
-                  </ul>
-                </>
-              )}
-            </div>
           </div>
         </div>
       </nav>
@@ -296,7 +297,7 @@ function AppContent() {
       )}
 
       {/* Main Container */}
-      <main className="container py-4" style={{ maxWidth: activeTab === "admin-users" ? 1200 : 960 }}>
+      <main className="container-fluid px-2 px-md-4 py-3 py-md-4" style={{ maxWidth: 1240, overflowX: "hidden" }}>
         {showSystemCheck ? (
           <div className="card border-0 shadow-sm p-4 my-4" style={{ backgroundColor: "#FFFFFF", borderRadius: 12 }}>
             <div className="d-flex justify-content-between align-items-center mb-3">
