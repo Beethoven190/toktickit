@@ -578,11 +578,11 @@ staffRouter.patch("/tickets/:id/priority", async (req: Request, res: Response) =
 const PERMITTED_STATUS_TRANSITIONS: Record<string, string[]> = {
   NEW: ["OPEN", "CANCELLED"],
   OPEN: ["IN_PROGRESS", "WAITING_FOR_REQUESTER", "RESOLVED", "CANCELLED"],
-  IN_PROGRESS: ["WAITING_FOR_REQUESTER", "RESOLVED", "CLOSED"],
-  WAITING_FOR_REQUESTER: ["IN_PROGRESS", "RESOLVED"],
+  IN_PROGRESS: ["WAITING_FOR_REQUESTER", "RESOLVED", "CANCELLED"],
+  WAITING_FOR_REQUESTER: ["IN_PROGRESS", "RESOLVED", "CANCELLED"],
   RESOLVED: ["CLOSED", "REOPENED"],
   CLOSED: ["REOPENED"],
-  REOPENED: ["IN_PROGRESS", "RESOLVED", "CANCELLED"],
+  REOPENED: ["IN_PROGRESS", "WAITING_FOR_REQUESTER", "RESOLVED", "CANCELLED"],
   CANCELLED: [],
 };
 
@@ -601,7 +601,7 @@ staffRouter.patch("/tickets/:id/status", async (req: Request, res: Response) => 
       });
     }
 
-    const { status, resolutionSummary } = req.body;
+    const { status, resolutionSummary, expectedUpdatedAt } = req.body;
     if (!status || typeof status !== "string") {
       return res.status(400).json({
         error: {
@@ -644,6 +644,20 @@ staffRouter.patch("/tickets/:id/status", async (req: Request, res: Response) => 
           message: "Ticket not found",
         },
       });
+    }
+
+    // Optimistic Concurrency Guard (BR-11, AC-08, FR-10)
+    if (expectedUpdatedAt) {
+      const expectedTime = new Date(expectedUpdatedAt).getTime();
+      const actualTime = ticket.updatedAt.getTime();
+      if (isNaN(expectedTime) || Math.abs(expectedTime - actualTime) > 1000) {
+        return res.status(409).json({
+          error: {
+            code: "STALE_UPDATE_CONFLICT",
+            message: "The ticket was modified by another user. Please refresh and try again.",
+          },
+        });
+      }
     }
 
     // Check transition validity
