@@ -9,6 +9,8 @@ import TicketDetail from "./components/TicketDetail.js";
 import StaffTicketQueue from "./components/StaffTicketQueue.js";
 import { StaffTicketDetail } from "./components/StaffTicketDetail.js";
 import UserManagement from "./components/UserManagement.js";
+import StaffDashboard from "./components/StaffDashboard.js";
+import RequesterDashboard from "./components/RequesterDashboard.js";
 
 type UiState = "idle" | "loading" | "success" | "error";
 
@@ -27,9 +29,11 @@ export const DEFAULT_AUTH_USER: AuthUser = {
   isActive: true,
 };
 
-function AppContent() {
+function AppContent({ initialTab }: { initialTab?: "dashboard" | "my-tickets" | "create-ticket" | "queue" | "admin-users" }) {
   const { user, logout, isLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<"my-tickets" | "create-ticket" | "queue" | "admin-users">("my-tickets");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "my-tickets" | "create-ticket" | "queue" | "admin-users">(initialTab || "my-tickets");
+  const [queueFilter, setQueueFilter] = useState<{ status?: string; owner?: string; search?: string } | undefined>(undefined);
+  const [myTicketsStatusFilter, setMyTicketsStatusFilter] = useState<string | undefined>(undefined);
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
   const [showSystemCheck, setShowSystemCheck] = useState<boolean>(false);
   const [profileOpen, setProfileOpen] = useState<boolean>(false);
@@ -40,7 +44,7 @@ function AppContent() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  function handleNavigate(tab: "my-tickets" | "create-ticket" | "queue" | "admin-users") {
+  function handleNavigate(tab: "dashboard" | "my-tickets" | "create-ticket" | "queue" | "admin-users") {
     setSelectedTicketId(null);
     setActiveTab(tab);
     setShowSystemCheck(false);
@@ -208,6 +212,23 @@ function AppContent() {
           <div className="w-100 w-md-auto order-md-2 mt-2 mt-md-0 overflow-x-auto no-scrollbar">
             <ul className="navbar-nav flex-row flex-nowrap gap-1 mb-0 py-0" style={{ overflowX: "auto" }}>
               {/* Role: Requester / Staff / Admin Tabs */}
+              {/* Dashboard Tab */}
+              <li className="nav-item">
+                <button
+                  type="button"
+                  className={`btn btn-link nav-link px-2 px-md-3 py-1 text-nowrap ${
+                    activeTab === "dashboard" && selectedTicketId === null && !showSystemCheck
+                      ? "active fw-bold text-white border-bottom border-white border-2"
+                      : "text-white-50"
+                  }`}
+                  style={{ textDecoration: "none", fontSize: "0.9rem" }}
+                  onClick={() => handleNavigate("dashboard")}
+                  data-testid="nav-tab-dashboard"
+                >
+                  📊 Dashboard
+                </button>
+              </li>
+
               <li className="nav-item">
                 <button
                   type="button"
@@ -373,6 +394,32 @@ function AppContent() {
               onBack={() => setSelectedTicketId(null)}
             />
           )
+        ) : activeTab === "dashboard" ? (
+          user.role === "STAFF" || user.role === "ADMIN" ? (
+            <StaffDashboard
+              onNavigateToQueue={(filters) => {
+                setQueueFilter(filters);
+                handleNavigate("queue");
+              }}
+              onNavigateToCreate={() => handleNavigate("create-ticket")}
+              onSelectTicket={(ticketId) => {
+                setSelectedTicketId(ticketId);
+                setActiveTab("queue");
+              }}
+            />
+          ) : (
+            <RequesterDashboard
+              onNavigateToMyTickets={(status) => {
+                setMyTicketsStatusFilter(status);
+                handleNavigate("my-tickets");
+              }}
+              onNavigateToCreate={() => handleNavigate("create-ticket")}
+              onSelectTicket={(ticketId) => {
+                setSelectedTicketId(ticketId);
+                setActiveTab("my-tickets");
+              }}
+            />
+          )
         ) : activeTab === "create-ticket" ? (
           <CreateTicket
             currentRequester={currentRequester}
@@ -380,7 +427,11 @@ function AppContent() {
             onTicketCreated={(t: Ticket) => setSelectedTicketId(t.id)}
           />
         ) : activeTab === "queue" ? (
-          <StaffTicketQueue onSelectTicket={(t) => setSelectedTicketId(t.id)} />
+          <StaffTicketQueue
+            onSelectTicket={(t) => setSelectedTicketId(t.id)}
+            initialStatus={queueFilter?.status}
+            initialOwner={queueFilter?.owner}
+          />
         ) : activeTab === "admin-users" ? (
           <UserManagement />
         ) : (
@@ -388,6 +439,7 @@ function AppContent() {
             currentRequester={currentRequester}
             onCreateNew={() => handleNavigate("create-ticket")}
             onSelectTicket={(t: Ticket) => setSelectedTicketId(t.id)}
+            initialStatus={myTicketsStatusFilter}
           />
         )}
       </main>
@@ -395,7 +447,7 @@ function AppContent() {
   );
 }
 
-export default function App({ initialUser }: { initialUser?: AuthUser | null }) {
+export default function App({ initialUser, initialTab }: { initialUser?: AuthUser | null; initialTab?: "dashboard" | "my-tickets" | "create-ticket" | "queue" | "admin-users" }) {
   // Backward compatibility: If rendered in Lab 1/2 tests without initialUser or saved token,
   // use DEFAULT_AUTH_USER unless explicitly testing unauthenticated login
   const fallbackUser =
@@ -409,7 +461,7 @@ export default function App({ initialUser }: { initialUser?: AuthUser | null }) 
 
   return (
     <AuthProvider initialUser={fallbackUser}>
-      <AppContent />
+      <AppContent initialTab={initialTab} />
     </AuthProvider>
   );
 }

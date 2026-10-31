@@ -9,9 +9,11 @@ import {
 
 interface StaffTicketQueueProps {
   onSelectTicket: (ticket: StaffQueueTicket) => void;
+  initialStatus?: string;
+  initialOwner?: string;
 }
 
-export default function StaffTicketQueue({ onSelectTicket }: StaffTicketQueueProps) {
+export default function StaffTicketQueue({ onSelectTicket, initialStatus, initialOwner }: StaffTicketQueueProps) {
   const [tickets, setTickets] = useState<StaffQueueTicket[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -33,8 +35,8 @@ export default function StaffTicketQueue({ onSelectTicket }: StaffTicketQueuePro
   const [search, setSearch] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedPriority, setSelectedPriority] = useState<string>("");
-  const [selectedStatus, setSelectedStatus] = useState<string>("");
-  const [selectedOwner, setSelectedOwner] = useState<string>("");
+  const [selectedStatus, setSelectedStatus] = useState<string>(initialStatus || "");
+  const [selectedOwner, setSelectedOwner] = useState<string>(initialOwner || "");
   const [quickFilter, setQuickFilter] = useState<string>("all");
 
   // Sorting
