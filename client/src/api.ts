@@ -559,7 +559,8 @@ export async function updateStaffTicketPriority(
 export async function updateStaffTicketStatus(
   ticketId: number,
   status: string,
-  resolutionSummary?: string
+  resolutionSummary?: string,
+  expectedUpdatedAt?: string
 ): Promise<StaffQueueTicket> {
   const res = await fetch(`${API_URL}/api/staff/tickets/${ticketId}/status`, {
     method: "PATCH",
@@ -567,7 +568,7 @@ export async function updateStaffTicketStatus(
       "Content-Type": "application/json",
       ...getAuthHeaders(),
     },
-    body: JSON.stringify({ status, resolutionSummary }),
+    body: JSON.stringify({ status, resolutionSummary, expectedUpdatedAt }),
   });
 
   const data = await res.json().catch(() => ({}));
@@ -666,6 +667,27 @@ export async function toggleProblemResolved(ticketId: number, isResolved: boolea
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const message = data.error?.message || data.error || `Failed to update resolution indication: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export async function resolveAdvisoryApi(
+  ticketId: number
+): Promise<{ message: string; ticketId: number; advisoryStatus: string }> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/resolve-advisory`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({}),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to record advisory resolution: ${res.status}`;
     throw new Error(message);
   }
 

@@ -891,6 +891,72 @@ const handleResolveIndication = async (req: Request, res: Response) => {
 app.post("/api/tickets/:id/resolve-indication", handleResolveIndication);
 app.patch("/api/tickets/:id/resolve-indication", handleResolveIndication);
 
+// ---------------------------------------------------------------------------
+// Issue 4 (Lab 4) — Advisory Resolution Gate for Requesters (FR-09, BR-08)
+// POST /api/tickets/:id/resolve-advisory
+// ---------------------------------------------------------------------------
+app.post("/api/tickets/:id/resolve-advisory", async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid ticket ID" } });
+    }
+
+    const prisma = getPrisma();
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      include: {
+        requester: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "Ticket not found" } });
+    }
+
+    // Role & Ownership check: Requester must own ticket. Staff/Admin allowed.
+    if (req.user) {
+      if (req.user.role === "REQUESTER" && ticket.requesterId !== req.user.id) {
+        return res.status(403).json({
+          error: {
+            code: "FORBIDDEN",
+            message: "Forbidden: You may only signal advisory resolution on your own tickets",
+          },
+        });
+      }
+    } else {
+      const requesterId = Number(req.body.requesterId || req.query.requesterId);
+      if (!requesterId || ticket.requesterId !== requesterId) {
+        return res.status(403).json({
+          error: {
+            code: "FORBIDDEN",
+            message: "Forbidden: You may only signal advisory resolution on your own tickets",
+          },
+        });
+      }
+    }
+
+    // Update advisory flag without altering ticket.currentStatus (BR-08)
+    await prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        problemResolvedReq: true,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Advisory resolution recorded. IT Staff will review and formally close the ticket.",
+      ticketId: ticket.id,
+      advisoryStatus: "APPEARS_RESOLVED",
+    });
+  } catch (err) {
+    console.error("Failed to record advisory resolution:", err);
+    return res.status(500).json({
+      error: { code: "INTERNAL_ERROR", message: "Failed to record advisory resolution" },
+    });
+  }
+});
+
 
 // ---------------------------------------------------------------------------
 // Issue 2 (Lab 4) — Requester Read-Only Actions Taken list (AC-03, FR-04, BR-06)
