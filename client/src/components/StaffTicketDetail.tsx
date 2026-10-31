@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { ActionsTakenSection } from "./ActionsTakenSection.js";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   StaffQueueTicket,
   StaffAssignee,
@@ -22,11 +23,11 @@ interface StaffTicketDetailProps {
 const PERMITTED_TRANSITIONS: Record<string, string[]> = {
   NEW: ["OPEN", "CANCELLED"],
   OPEN: ["IN_PROGRESS", "WAITING_FOR_REQUESTER", "RESOLVED", "CANCELLED"],
-  IN_PROGRESS: ["WAITING_FOR_REQUESTER", "RESOLVED", "CLOSED"],
-  WAITING_FOR_REQUESTER: ["IN_PROGRESS", "RESOLVED"],
+  IN_PROGRESS: ["WAITING_FOR_REQUESTER", "RESOLVED", "CANCELLED"],
+  WAITING_FOR_REQUESTER: ["IN_PROGRESS", "RESOLVED", "CANCELLED"],
   RESOLVED: ["CLOSED", "REOPENED"],
   CLOSED: ["REOPENED"],
-  REOPENED: ["IN_PROGRESS", "RESOLVED", "CANCELLED"],
+  REOPENED: ["IN_PROGRESS", "WAITING_FOR_REQUESTER", "RESOLVED", "CANCELLED"],
   CANCELLED: [],
 };
 
@@ -83,13 +84,30 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({
     }
   }, [ticketId]);
 
+  const successTimeoutRef = useRef<NodeJS.Timeout | number | null>(null);
+
   useEffect(() => {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current as NodeJS.Timeout);
+      }
+    };
+  }, []);
+
   const showSuccess = (msg: string) => {
     setSuccessMessage(msg);
-    setTimeout(() => setSuccessMessage(null), 4000);
+    if (successTimeoutRef.current) {
+      clearTimeout(successTimeoutRef.current as NodeJS.Timeout);
+    }
+    successTimeoutRef.current = setTimeout(() => {
+      if (typeof window !== "undefined") {
+        setSuccessMessage(null);
+      }
+    }, 4000);
   };
 
   // 1. Claim ticket
@@ -298,11 +316,11 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({
       {/* Main Ticket Card (Teacher Mockup 3) */}
       <div className="card shadow-sm border-0 mb-4" style={{ borderRadius: 10, background: "#FFFFFF" }}>
         <div
-          className="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center"
+          className="card-header bg-white border-bottom py-2 py-md-3 px-3 px-md-4 d-flex flex-wrap justify-content-between align-items-center gap-2"
           style={{ borderTopLeftRadius: 10, borderTopRightRadius: 10 }}
         >
-          <div className="d-flex align-items-center gap-3">
-            <h5 className="mb-0 font-monospace fw-bold" style={{ color: "#006B3C" }}>
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            <h5 className="mb-0 font-monospace fw-bold" style={{ color: "#006B3C", fontSize: "1.1rem" }}>
               {ticket.ticketNumber}
             </h5>
             <span
@@ -315,12 +333,12 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({
                   ? "bg-info text-dark"
                   : "bg-secondary"
               }`}
-              style={{ fontSize: "0.85rem", padding: "6px 10px" }}
+              style={{ fontSize: "0.8rem", padding: "4px 8px" }}
             >
               {STATUS_LABELS[ticket.currentStatus] || ticket.currentStatus}
             </span>
           </div>
-          <div className="text-muted small">
+          <div className="text-muted small" style={{ fontSize: "0.8rem" }}>
             Created: {new Date(ticket.createdAt).toLocaleString()}
           </div>
         </div>
@@ -559,6 +577,17 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({
           </div>
         </div>
       </div>
+
+      
+      {/* Actions Taken Work Tracking (Issue 3, Screen 8.3) */}
+      <ActionsTakenSection
+        ticketId={ticket.id}
+        actions={ticket.actions || []}
+        canManage={true}
+        currentUserName={assignees.find((a) => a.id === currentUserId)?.name || "Current Staff"}
+        isTicketTerminal={ticket.currentStatus === "CLOSED" || ticket.currentStatus === "CANCELLED"}
+        onActionsUpdated={loadData}
+      />
 
       {/* Tabs Section: Collaboration & Attachments (Teacher Mockup 3) */}
       <div className="card shadow-sm border-0" style={{ borderRadius: 10, background: "#FFFFFF" }}>

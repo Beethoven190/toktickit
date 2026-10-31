@@ -57,6 +57,45 @@ export interface Attachment {
   createdAt: string;
 }
 
+export interface ActionTaken {
+  id: number;
+  ticketId: number;
+  actionDateTime: string;
+  description: string;
+  result: string;
+  performedById: number;
+  performedBy: {
+    id: number;
+    name: string;
+    email: string;
+    role?: string;
+  };
+  followUpRequired: boolean;
+  followUpNote?: string | null;
+  attachmentNotes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateActionTakenDto {
+  description: string;
+  result: string;
+  followUpRequired?: boolean;
+  followUpNote?: string | null;
+  attachmentNotes?: string | null;
+  actionDateTime?: string;
+}
+
+export interface UpdateActionTakenDto {
+  description?: string;
+  result?: string;
+  followUpRequired?: boolean;
+  followUpNote?: string | null;
+  attachmentNotes?: string | null;
+  actionDateTime?: string;
+}
+
+
 export interface Ticket {
   id: number;
   ticketNumber: string;
@@ -76,6 +115,7 @@ export interface Ticket {
   resolutionSummary?: string | null;
   publicComments?: TicketComment[];
   internalNotes?: TicketComment[];
+  actions?: ActionTaken[];
   attachments?: Attachment[];
 }
 
@@ -519,7 +559,8 @@ export async function updateStaffTicketPriority(
 export async function updateStaffTicketStatus(
   ticketId: number,
   status: string,
-  resolutionSummary?: string
+  resolutionSummary?: string,
+  expectedUpdatedAt?: string
 ): Promise<StaffQueueTicket> {
   const res = await fetch(`${API_URL}/api/staff/tickets/${ticketId}/status`, {
     method: "PATCH",
@@ -527,7 +568,7 @@ export async function updateStaffTicketStatus(
       "Content-Type": "application/json",
       ...getAuthHeaders(),
     },
-    body: JSON.stringify({ status, resolutionSummary }),
+    body: JSON.stringify({ status, resolutionSummary, expectedUpdatedAt }),
   });
 
   const data = await res.json().catch(() => ({}));
@@ -626,6 +667,27 @@ export async function toggleProblemResolved(ticketId: number, isResolved: boolea
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const message = data.error?.message || data.error || `Failed to update resolution indication: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export async function resolveAdvisoryApi(
+  ticketId: number
+): Promise<{ message: string; ticketId: number; advisoryStatus: string }> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/resolve-advisory`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({}),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to record advisory resolution: ${res.status}`;
     throw new Error(message);
   }
 
@@ -774,6 +836,182 @@ export async function resetAdminUserPassword(
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const message = data.error?.message || data.error || `Failed to reset password: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Issue 2 & 3 (Lab 4) — Actions Taken API Functions
+// ---------------------------------------------------------------------------
+export async function getStaffTicketActions(
+  ticketId: number
+): Promise<{ actions: ActionTaken[]; total: number }> {
+  const res = await fetch(`${API_URL}/api/staff/tickets/${ticketId}/actions`, {
+    headers: { ...getAuthHeaders() },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error?.message || data.error || `Failed to fetch actions: ${res.status}`);
+  }
+  return data;
+}
+
+export async function createStaffTicketAction(
+  ticketId: number,
+  dto: CreateActionTakenDto
+): Promise<{ action: ActionTaken }> {
+  const res = await fetch(`${API_URL}/api/staff/tickets/${ticketId}/actions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(dto),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const errorMsg = data.error?.fields
+      ? Object.values(data.error.fields).join(", ")
+      : data.error?.message || data.error || `Failed to create action: ${res.status}`;
+    throw new Error(errorMsg);
+  }
+  return data;
+}
+
+export async function updateStaffTicketAction(
+  ticketId: number,
+  actionId: number,
+  dto: UpdateActionTakenDto
+): Promise<{ action: ActionTaken }> {
+  const res = await fetch(`${API_URL}/api/staff/tickets/${ticketId}/actions/${actionId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(dto),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const errorMsg = data.error?.fields
+      ? Object.values(data.error.fields).join(", ")
+      : data.error?.message || data.error || `Failed to update action: ${res.status}`;
+    throw new Error(errorMsg);
+  }
+  return data;
+}
+
+export async function getRequesterTicketActions(
+  ticketId: number
+): Promise<{ actions: ActionTaken[]; total: number }> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/actions`, {
+    headers: { ...getAuthHeaders() },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error?.message || data.error || `Failed to fetch actions: ${res.status}`);
+  }
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Lab 4 — Issue 5: Role-Appropriate Dashboards API (FR-11..FR-15, AC-04, AC-05)
+// ---------------------------------------------------------------------------
+
+export interface StaffDashboardMetric {
+  count: number;
+  delta: string;
+}
+
+export interface StaffDashboardRecentTicket {
+  id: number;
+  ticketNumber: string;
+  summary: string;
+  category: string;
+  status: string;
+  itPriority: string;
+  ownerName: string;
+  updatedAt: string;
+}
+
+export interface StaffDashboardData {
+  user: {
+    id: number;
+    name: string;
+    role: string;
+  };
+  metrics: {
+    new: StaffDashboardMetric;
+    open: StaffDashboardMetric;
+    inProgress: StaffDashboardMetric;
+    waitingForRequester: StaffDashboardMetric;
+    myAssigned: StaffDashboardMetric;
+  };
+  recentTickets: StaffDashboardRecentTicket[];
+}
+
+export interface RequesterDashboardMetric {
+  count: number;
+  label: string;
+}
+
+export interface RequesterDashboardRecentTicket {
+  id: number;
+  ticketNumber: string;
+  summary: string;
+  category: string;
+  status: string;
+  requestedPriority: string;
+  updatedAt: string;
+}
+
+export interface RequesterDashboardData {
+  user: {
+    id: number;
+    name: string;
+    role: string;
+  };
+  metrics: {
+    myOpen: RequesterDashboardMetric;
+    inProgress: RequesterDashboardMetric;
+    resolved: RequesterDashboardMetric;
+    closed: RequesterDashboardMetric;
+  };
+  recentTickets: RequesterDashboardRecentTicket[];
+}
+
+export async function getStaffDashboard(): Promise<StaffDashboardData> {
+  const res = await fetch(`${API_URL}/api/dashboards/staff`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to fetch staff dashboard: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export async function getRequesterDashboard(): Promise<RequesterDashboardData> {
+  const res = await fetch(`${API_URL}/api/dashboards/requester`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to fetch requester dashboard: ${res.status}`;
     throw new Error(message);
   }
 

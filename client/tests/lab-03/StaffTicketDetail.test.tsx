@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StaffTicketDetail } from "../../src/components/StaffTicketDetail.js";
@@ -50,6 +50,10 @@ describe("StaffTicketDetail Component (Issue 4, AC-09, AC-10, AC-11, AC-12)", ()
     vi.restoreAllMocks();
     vi.spyOn(api, "getStaffTicketDetail").mockResolvedValue({ ...mockTicket });
     vi.spyOn(api, "getStaffAssignees").mockResolvedValue([...mockAssignees]);
+  });
+
+  afterEach(() => {
+    vi.clearAllTimers();
   });
 
   it("renders ticket details correctly (ticket number, summary, category, requester)", async () => {

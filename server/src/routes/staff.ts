@@ -259,6 +259,13 @@ staffRouter.get("/tickets/:id", async (req: Request, res: Response) => {
             author: { select: { id: true, name: true, role: true } },
           },
         },
+        actions: {
+          orderBy: { actionDateTime: "asc" },
+          include: {
+            performedBy: { select: { id: true, name: true, email: true, role: true } },
+          },
+        },
+
       },
     });
 
@@ -571,11 +578,11 @@ staffRouter.patch("/tickets/:id/priority", async (req: Request, res: Response) =
 const PERMITTED_STATUS_TRANSITIONS: Record<string, string[]> = {
   NEW: ["OPEN", "CANCELLED"],
   OPEN: ["IN_PROGRESS", "WAITING_FOR_REQUESTER", "RESOLVED", "CANCELLED"],
-  IN_PROGRESS: ["WAITING_FOR_REQUESTER", "RESOLVED", "CLOSED"],
-  WAITING_FOR_REQUESTER: ["IN_PROGRESS", "RESOLVED"],
+  IN_PROGRESS: ["WAITING_FOR_REQUESTER", "RESOLVED", "CANCELLED"],
+  WAITING_FOR_REQUESTER: ["IN_PROGRESS", "RESOLVED", "CANCELLED"],
   RESOLVED: ["CLOSED", "REOPENED"],
   CLOSED: ["REOPENED"],
-  REOPENED: ["IN_PROGRESS", "RESOLVED", "CANCELLED"],
+  REOPENED: ["IN_PROGRESS", "WAITING_FOR_REQUESTER", "RESOLVED", "CANCELLED"],
   CANCELLED: [],
 };
 
@@ -594,7 +601,7 @@ staffRouter.patch("/tickets/:id/status", async (req: Request, res: Response) => 
       });
     }
 
-    const { status, resolutionSummary } = req.body;
+    const { status, resolutionSummary, expectedUpdatedAt } = req.body;
     if (!status || typeof status !== "string") {
       return res.status(400).json({
         error: {
@@ -637,6 +644,20 @@ staffRouter.patch("/tickets/:id/status", async (req: Request, res: Response) => 
           message: "Ticket not found",
         },
       });
+    }
+
+    // Optimistic Concurrency Guard (BR-11, AC-08, FR-10)
+    if (expectedUpdatedAt) {
+      const expectedTime = new Date(expectedUpdatedAt).getTime();
+      const actualTime = ticket.updatedAt.getTime();
+      if (isNaN(expectedTime) || Math.abs(expectedTime - actualTime) > 1000) {
+        return res.status(409).json({
+          error: {
+            code: "STALE_UPDATE_CONFLICT",
+            message: "The ticket was modified by another user. Please refresh and try again.",
+          },
+        });
+      }
     }
 
     // Check transition validity
@@ -705,3 +726,306 @@ staffRouter.patch("/tickets/:id/status", async (req: Request, res: Response) => 
   }
 });
 
+
+// ---------------------------------------------------------------------------
+// POST /api/staff/tickets/:ticketId/actions — Record an Action Taken (BR-01..BR-05, AC-01, AC-02)
+// ---------------------------------------------------------------------------
+staffRouter.post("/tickets/:ticketId/actions", async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.ticketId);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Ticket ID must be a valid integer",
+        },
+      });
+    }
+
+    const prisma = getPrisma();
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        error: {
+          code: "NOT_FOUND",
+          message: "Ticket not found",
+        },
+      });
+    }
+
+    // Terminal status guard (BR-07): Cannot add actions to CLOSED or CANCELLED tickets
+    if (ticket.currentStatus === "CLOSED" || ticket.currentStatus === "CANCELLED") {
+      return res.status(409).json({
+        error: {
+          code: "TERMINAL_TICKET_CONFLICT",
+          message: `Cannot add Action Taken to a ticket in ${ticket.currentStatus} status`,
+        },
+      });
+    }
+
+    const { description, result, followUpRequired, followUpNote, attachmentNotes, actionDateTime } = req.body;
+    const errors: Record<string, string> = {};
+
+    const trimmedDesc = typeof description === "string" ? description.trim() : "";
+    if (!trimmedDesc || trimmedDesc.length < 10 || trimmedDesc.length > 2000) {
+      errors.description = "Action description is required and must be between 10 and 2,000 characters";
+    }
+
+    const trimmedResult = typeof result === "string" ? result.trim() : "";
+    if (!trimmedResult || trimmedResult.length < 3 || trimmedResult.length > 2000) {
+      errors.result = "Result is required and must be between 3 and 2,000 characters";
+    }
+
+    const isFollowUp = Boolean(followUpRequired);
+    const trimmedFollowUpNote = typeof followUpNote === "string" ? followUpNote.trim() : "";
+
+    // Conditional follow-up rule (BR-04, AC-02)
+    if (isFollowUp && (!trimmedFollowUpNote || trimmedFollowUpNote.length < 3)) {
+      errors.followUpNote = "Follow-up note is required and must be at least 3 characters when follow-up is requested";
+    }
+
+    let parsedActionDateTime = new Date();
+    if (actionDateTime) {
+      const parsed = new Date(actionDateTime);
+      if (isNaN(parsed.getTime())) {
+        errors.actionDateTime = "Invalid action date/time format";
+      } else {
+        parsedActionDateTime = parsed;
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Invalid action taken data",
+          fields: errors,
+        },
+      });
+    }
+
+    // Automatic attribution: performedById = req.user.id (BR-03)
+    const action = await prisma.actionTaken.create({
+      data: {
+        ticketId,
+        actionDateTime: parsedActionDateTime,
+        description: trimmedDesc,
+        result: trimmedResult,
+        performedById: req.user!.id,
+        followUpRequired: isFollowUp,
+        followUpNote: isFollowUp ? trimmedFollowUpNote : null,
+        attachmentNotes: typeof attachmentNotes === "string" && attachmentNotes.trim() ? attachmentNotes.trim() : null,
+      },
+      include: {
+        performedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    return res.status(201).json({ action });
+  } catch (err) {
+    console.error("Failed to create action taken:", err);
+    return res.status(500).json({
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "Failed to create action taken",
+      },
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/staff/tickets/:ticketId/actions — List Actions Taken for staff (AC-01)
+// ---------------------------------------------------------------------------
+staffRouter.get("/tickets/:ticketId/actions", async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.ticketId);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Ticket ID must be a valid integer",
+        },
+      });
+    }
+
+    const prisma = getPrisma();
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { id: true },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        error: {
+          code: "NOT_FOUND",
+          message: "Ticket not found",
+        },
+      });
+    }
+
+    const actions = await prisma.actionTaken.findMany({
+      where: { ticketId },
+      orderBy: { actionDateTime: "asc" },
+      include: {
+        performedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    return res.status(200).json({
+      actions,
+      total: actions.length,
+    });
+  } catch (err) {
+    console.error("Failed to fetch actions taken:", err);
+    return res.status(500).json({
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "Failed to fetch actions taken",
+      },
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// PATCH /api/staff/tickets/:ticketId/actions/:actionId — Update Action Taken (FR-03)
+// ---------------------------------------------------------------------------
+staffRouter.patch("/tickets/:ticketId/actions/:actionId", async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.ticketId);
+    const actionId = Number(req.params.actionId);
+    if (isNaN(ticketId) || isNaN(actionId)) {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Ticket ID and Action ID must be valid integers",
+        },
+      });
+    }
+
+    const prisma = getPrisma();
+    const action = await prisma.actionTaken.findFirst({
+      where: { id: actionId, ticketId },
+      include: { ticket: true },
+    });
+
+    if (!action) {
+      return res.status(404).json({
+        error: {
+          code: "NOT_FOUND",
+          message: "Action taken not found for this ticket",
+        },
+      });
+    }
+
+    if (action.ticket.currentStatus === "CLOSED" || action.ticket.currentStatus === "CANCELLED") {
+      return res.status(409).json({
+        error: {
+          code: "TERMINAL_TICKET_CONFLICT",
+          message: `Cannot edit Action Taken on a ticket in ${action.ticket.currentStatus} status`,
+        },
+      });
+    }
+
+    const { description, result, followUpRequired, followUpNote, attachmentNotes, actionDateTime } = req.body;
+    const errors: Record<string, string> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateData: any = {};
+
+    if (description !== undefined) {
+      const trimmedDesc = typeof description === "string" ? description.trim() : "";
+      if (!trimmedDesc || trimmedDesc.length < 10 || trimmedDesc.length > 2000) {
+        errors.description = "Action description must be between 10 and 2,000 characters";
+      } else {
+        updateData.description = trimmedDesc;
+      }
+    }
+
+    if (result !== undefined) {
+      const trimmedResult = typeof result === "string" ? result.trim() : "";
+      if (!trimmedResult || trimmedResult.length < 3 || trimmedResult.length > 2000) {
+        errors.result = "Result must be between 3 and 2,000 characters";
+      } else {
+        updateData.result = trimmedResult;
+      }
+    }
+
+    const nextFollowUp = followUpRequired !== undefined ? Boolean(followUpRequired) : action.followUpRequired;
+    updateData.followUpRequired = nextFollowUp;
+
+    if (nextFollowUp) {
+      const noteToCheck = followUpNote !== undefined ? String(followUpNote).trim() : action.followUpNote || "";
+      if (!noteToCheck || noteToCheck.length < 3) {
+        errors.followUpNote = "Follow-up note is required and must be at least 3 characters when follow-up is requested";
+      } else if (followUpNote !== undefined) {
+        updateData.followUpNote = noteToCheck;
+      }
+    } else {
+      updateData.followUpNote = null;
+    }
+
+    if (attachmentNotes !== undefined) {
+      updateData.attachmentNotes = typeof attachmentNotes === "string" && attachmentNotes.trim() ? attachmentNotes.trim() : null;
+    }
+
+    if (actionDateTime !== undefined) {
+      const parsed = new Date(actionDateTime);
+      if (isNaN(parsed.getTime())) {
+        errors.actionDateTime = "Invalid action date/time format";
+      } else {
+        updateData.actionDateTime = parsed;
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Invalid action taken update data",
+          fields: errors,
+        },
+      });
+    }
+
+    const updated = await prisma.actionTaken.update({
+      where: { id: actionId },
+      data: updateData,
+      include: {
+        performedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    return res.status(200).json({ action: updated });
+  } catch (err) {
+    console.error("Failed to update action taken:", err);
+    return res.status(500).json({
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "Failed to update action taken",
+      },
+    });
+  }
+});

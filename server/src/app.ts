@@ -7,6 +7,7 @@ import { getPrisma } from "./prisma.js";
 import { authRouter } from "./routes/auth.js";
 import { staffRouter } from "./routes/staff.js";
 import { adminRouter } from "./routes/admin.js";
+import { dashboardRouter } from "./routes/dashboards.js";
 import { optionalAuthenticate } from "./middleware/auth.js";
 
 // The Express app is exported separately from app.listen() (see index.ts) so
@@ -21,6 +22,7 @@ app.use(optionalAuthenticate); // Populates req.user if Bearer token present
 app.use("/api/auth", authRouter);
 app.use("/api/staff", staffRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/dashboards", dashboardRouter);
 
 // ---------------------------------------------------------------------------
 // Multer Storage & Validation for Attachments (BR-09, BR-10)
@@ -419,6 +421,13 @@ app.get("/api/tickets/:id", async (req: Request, res: Response) => {
           orderBy: { createdAt: "asc" },
           include: { author: { select: { id: true, name: true, role: true } } },
         },
+        actions: {
+          orderBy: { actionDateTime: "asc" },
+          include: {
+            performedBy: { select: { id: true, name: true, email: true, role: true } },
+          },
+        },
+
       },
     });
 
@@ -883,6 +892,166 @@ const handleResolveIndication = async (req: Request, res: Response) => {
 
 app.post("/api/tickets/:id/resolve-indication", handleResolveIndication);
 app.patch("/api/tickets/:id/resolve-indication", handleResolveIndication);
+
+// ---------------------------------------------------------------------------
+// Issue 4 (Lab 4) — Advisory Resolution Gate for Requesters (FR-09, BR-08)
+// POST /api/tickets/:id/resolve-advisory
+// ---------------------------------------------------------------------------
+app.post("/api/tickets/:id/resolve-advisory", async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid ticket ID" } });
+    }
+
+    const prisma = getPrisma();
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      include: {
+        requester: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "Ticket not found" } });
+    }
+
+    // Role & Ownership check: Requester must own ticket. Staff/Admin allowed.
+    if (req.user) {
+      if (req.user.role === "REQUESTER" && ticket.requesterId !== req.user.id) {
+        return res.status(403).json({
+          error: {
+            code: "FORBIDDEN",
+            message: "Forbidden: You may only signal advisory resolution on your own tickets",
+          },
+        });
+      }
+    } else {
+      const requesterId = Number(req.body.requesterId || req.query.requesterId);
+      if (!requesterId || ticket.requesterId !== requesterId) {
+        return res.status(403).json({
+          error: {
+            code: "FORBIDDEN",
+            message: "Forbidden: You may only signal advisory resolution on your own tickets",
+          },
+        });
+      }
+    }
+
+    // Update advisory flag without altering ticket.currentStatus (BR-08)
+    await prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        problemResolvedReq: true,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Advisory resolution recorded. IT Staff will review and formally close the ticket.",
+      ticketId: ticket.id,
+      advisoryStatus: "APPEARS_RESOLVED",
+    });
+  } catch (err) {
+    console.error("Failed to record advisory resolution:", err);
+    return res.status(500).json({
+      error: { code: "INTERNAL_ERROR", message: "Failed to record advisory resolution" },
+    });
+  }
+});
+
+
+// ---------------------------------------------------------------------------
+// Issue 2 (Lab 4) — Requester Read-Only Actions Taken list (AC-03, FR-04, BR-06)
+// ---------------------------------------------------------------------------
+app.get("/api/tickets/:id/actions", async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Ticket ID must be a valid integer",
+        },
+      });
+    }
+
+    const prisma = getPrisma();
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { id: true, requesterId: true },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        error: {
+          code: "NOT_FOUND",
+          message: "Ticket not found",
+        },
+      });
+    }
+
+    // Role-based authorization & ownership protection (AC-03, BR-06):
+    // Requesters can only view Actions Taken on their own tickets.
+    if (req.user) {
+      if (req.user.role === "REQUESTER" && ticket.requesterId !== req.user.id) {
+        return res.status(403).json({
+          error: {
+            code: "FORBIDDEN_RESOURCE",
+            message: "Forbidden: You do not have permission to view Actions Taken for this ticket",
+          },
+        });
+      }
+    } else {
+      const requesterId = Number(req.query.requesterId);
+      if (!requesterId || ticket.requesterId !== requesterId) {
+        return res.status(403).json({
+          error: {
+            code: "FORBIDDEN_RESOURCE",
+            message: "Forbidden: You do not have permission to view Actions Taken for this ticket",
+          },
+        });
+      }
+    }
+
+    const actions = await prisma.actionTaken.findMany({
+      where: { ticketId },
+      orderBy: { actionDateTime: "asc" },
+      include: {
+        performedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    return res.status(200).json({
+      actions,
+      total: actions.length,
+    });
+  } catch (err) {
+    console.error("Failed to fetch requester ticket actions:", err);
+    return res.status(500).json({
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "Failed to fetch actions taken",
+      },
+    });
+  }
+});
+
+// Guard: Requesters are strictly forbidden from creating Actions Taken (BR-06, AC-03)
+app.post("/api/tickets/:id/actions", (req: Request, res: Response) => {
+  return res.status(403).json({
+    error: {
+      code: "FORBIDDEN",
+      message: "Forbidden: Requesters cannot create or modify Actions Taken. Only IT Staff and Administrators may record actions.",
+    },
+  });
+});
 
 export default app;
 

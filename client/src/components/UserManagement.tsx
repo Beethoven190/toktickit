@@ -444,25 +444,29 @@ export default function UserManagement() {
             </div>
 
             <div className="table-responsive">
-              <table className="table table-hover align-middle mb-0" data-testid="users-table">
+              <table
+                className="table table-hover align-middle mb-0"
+                style={{ fontSize: "0.82rem", tableLayout: "fixed", width: "100%" }}
+                data-testid="users-table"
+              >
                 <thead className="table-light">
                   <tr>
                     <th
-                      style={{ cursor: "pointer", width: "40%" }}
+                      style={{ cursor: "pointer", width: "42%", paddingLeft: "12px", paddingRight: "4px" }}
                       onClick={() => handleSort("name")}
                       className="user-select-none"
                     >
                       Name {sortField === "name" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
                     </th>
                     <th
-                      style={{ cursor: "pointer", width: "30%" }}
+                      style={{ cursor: "pointer", width: "30%", paddingLeft: "4px", paddingRight: "4px" }}
                       onClick={() => handleSort("role")}
                       className="user-select-none"
                     >
                       Role {sortField === "role" ? (sortOrder === "asc" ? "▲" : "▼") : "⇅"}
                     </th>
                     <th
-                      style={{ cursor: "pointer", width: "30%" }}
+                      style={{ cursor: "pointer", width: "28%", paddingLeft: "4px", paddingRight: "12px" }}
                       onClick={() => handleSort("status")}
                       className="user-select-none"
                     >
@@ -497,34 +501,42 @@ export default function UserManagement() {
                           }}
                           data-testid={`user-row-${user.id}`}
                         >
-                          <td>
-                            <div className="fw-semibold text-dark">{user.name}</div>
-                            <div className="text-muted small" style={{ fontSize: "0.8rem" }}>
+                          <td style={{ paddingLeft: "12px", paddingRight: "4px" }}>
+                            <div className="fw-semibold text-dark text-truncate" style={{ maxWidth: 140 }}>
+                              {user.name}
+                            </div>
+                            <div className="text-muted small text-truncate" style={{ fontSize: "0.75rem", maxWidth: 140 }}>
                               {user.email}
                             </div>
                           </td>
-                          <td>
+                          <td style={{ paddingLeft: "4px", paddingRight: "4px" }}>
                             <span
-                              className={`badge border ${ROLE_BADGE_CLASSES[user.role]} rounded-pill px-2 py-1`}
-                              style={{ fontSize: "0.75rem" }}
+                              className={`badge border ${ROLE_BADGE_CLASSES[user.role]} rounded-pill text-truncate d-inline-block`}
+                              style={{ fontSize: "0.7rem", padding: "3px 7px", maxWidth: "100%" }}
                             >
                               {ROLE_LABELS[user.role]}
                             </span>
                           </td>
-                          <td>
+                          <td style={{ paddingLeft: "4px", paddingRight: "12px" }}>
                             {user.isActive ? (
-                              <span className="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1">
+                              <span
+                                className="badge bg-success-subtle text-success border border-success-subtle rounded-pill"
+                                style={{ fontSize: "0.7rem", padding: "3px 6px" }}
+                              >
                                 ● Active
                               </span>
                             ) : (
-                              <span className="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1">
+                              <span
+                                className="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill"
+                                style={{ fontSize: "0.7rem", padding: "3px 6px" }}
+                              >
                                 ○ Inactive
                               </span>
                             )}
                             {user.mustChangePassword && (
                               <span
                                 className="badge bg-warning text-dark ms-1"
-                                style={{ fontSize: "0.65rem" }}
+                                style={{ fontSize: "0.62rem", padding: "2px 4px" }}
                                 title="Must change password on next login"
                               >
                                 🔑 Reset
@@ -541,7 +553,7 @@ export default function UserManagement() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="card-footer bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+              <div className="card-footer bg-white border-0 py-3 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
                 <span className="text-muted small">
                   Showing {(currentPage - 1) * pageSize + 1} to{" "}
                   {Math.min(currentPage * pageSize, filteredUsers.length)} of {filteredUsers.length} users
