@@ -11,12 +11,13 @@ interface Props {
   currentRequester: RequesterUser;
   onCreateNew: () => void;
   onSelectTicket?: (ticket: Ticket) => void;
+  initialStatus?: string;
 }
 
 type SortField = "createdAt" | "ticketNumber" | "requestedPriority" | "currentStatus" | "updatedAt";
 type SortOrder = "asc" | "desc";
 
-export default function MyTickets({ currentRequester, onCreateNew, onSelectTicket }: Props) {
+export default function MyTickets({ currentRequester, onCreateNew, onSelectTicket, initialStatus }: Props) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -26,7 +27,7 @@ export default function MyTickets({ currentRequester, onCreateNew, onSelectTicke
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedPriority, setSelectedPriority] = useState<string>("");
-  const [selectedStatus, setSelectedStatus] = useState<string>("");
+  const [selectedStatus, setSelectedStatus] = useState<string>(initialStatus || "");
 
   // Sorting
   const [sortField, setSortField] = useState<SortField>("createdAt");

@@ -915,3 +915,105 @@ export async function getRequesterTicketActions(
   }
   return data;
 }
+
+// ---------------------------------------------------------------------------
+// Lab 4 — Issue 5: Role-Appropriate Dashboards API (FR-11..FR-15, AC-04, AC-05)
+// ---------------------------------------------------------------------------
+
+export interface StaffDashboardMetric {
+  count: number;
+  delta: string;
+}
+
+export interface StaffDashboardRecentTicket {
+  id: number;
+  ticketNumber: string;
+  summary: string;
+  category: string;
+  status: string;
+  itPriority: string;
+  ownerName: string;
+  updatedAt: string;
+}
+
+export interface StaffDashboardData {
+  user: {
+    id: number;
+    name: string;
+    role: string;
+  };
+  metrics: {
+    new: StaffDashboardMetric;
+    open: StaffDashboardMetric;
+    inProgress: StaffDashboardMetric;
+    waitingForRequester: StaffDashboardMetric;
+    myAssigned: StaffDashboardMetric;
+  };
+  recentTickets: StaffDashboardRecentTicket[];
+}
+
+export interface RequesterDashboardMetric {
+  count: number;
+  label: string;
+}
+
+export interface RequesterDashboardRecentTicket {
+  id: number;
+  ticketNumber: string;
+  summary: string;
+  category: string;
+  status: string;
+  requestedPriority: string;
+  updatedAt: string;
+}
+
+export interface RequesterDashboardData {
+  user: {
+    id: number;
+    name: string;
+    role: string;
+  };
+  metrics: {
+    myOpen: RequesterDashboardMetric;
+    inProgress: RequesterDashboardMetric;
+    resolved: RequesterDashboardMetric;
+    closed: RequesterDashboardMetric;
+  };
+  recentTickets: RequesterDashboardRecentTicket[];
+}
+
+export async function getStaffDashboard(): Promise<StaffDashboardData> {
+  const res = await fetch(`${API_URL}/api/dashboards/staff`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to fetch staff dashboard: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export async function getRequesterDashboard(): Promise<RequesterDashboardData> {
+  const res = await fetch(`${API_URL}/api/dashboards/requester`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error?.message || data.error || `Failed to fetch requester dashboard: ${res.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}

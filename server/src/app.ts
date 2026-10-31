@@ -7,6 +7,7 @@ import { getPrisma } from "./prisma.js";
 import { authRouter } from "./routes/auth.js";
 import { staffRouter } from "./routes/staff.js";
 import { adminRouter } from "./routes/admin.js";
+import { dashboardRouter } from "./routes/dashboards.js";
 import { optionalAuthenticate } from "./middleware/auth.js";
 
 // The Express app is exported separately from app.listen() (see index.ts) so
@@ -21,6 +22,7 @@ app.use(optionalAuthenticate); // Populates req.user if Bearer token present
 app.use("/api/auth", authRouter);
 app.use("/api/staff", staffRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/dashboards", dashboardRouter);
 
 // ---------------------------------------------------------------------------
 // Multer Storage & Validation for Attachments (BR-09, BR-10)
