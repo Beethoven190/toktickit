@@ -6,7 +6,7 @@ Sprint 4 maintains our rigorous multi-tiered test automation pyramid across 4 la
 1. **Backend Integration & API Tests (`server/tests/lab-04/`):** Supertest + Vitest testing Prisma schema, REST endpoints, RBAC middleware, state transitions, concurrency guards, and SQL aggregation queries for dashboards.
 2. **Frontend Component & Hook Tests (`client/tests/lab-04/`):** React Testing Library + Vitest verifying modal behavior, dynamic form validation (conditional follow-up notes), read-only states, KPI rendering, and event handlers.
 3. **End-to-End Multi-Role Workflow Tests (`e2e/lab-04/`):** Playwright automated scenarios exercising full user journeys (IT Staff logging work, resolving tickets, Requesters viewing dashboards and actions).
-4. **Full Regression Test Suite:** Continuous verification of all 160 baseline tests from Labs 1, 2, and 3 to ensure zero regression.
+4. **Full Regression Test Suite:** Continuous verification of all baseline tests from Labs 1, 2, and 3 to ensure zero regression across the complete application.
 
 ---
 
@@ -19,40 +19,68 @@ Sprint 4 maintains our rigorous multi-tiered test automation pyramid across 4 la
 | **API-ACT-03** | API | **AC-03** | Requester attempts to `POST` or `PATCH` Action Taken | HTTP 403 Forbidden | `server/tests/lab-04/actions-taken.api.test.ts` | **Pass** |
 | **API-ACT-04** | API | **AC-03** | Requester retrieves Actions Taken on owned ticket | HTTP 200 with list of recorded actions | `server/tests/lab-04/actions-taken.api.test.ts` | **Pass** |
 | **API-ACT-05** | API | **AC-01** | IT Staff updates existing Action Taken (`PATCH`) | HTTP 200 with updated fields | `server/tests/lab-04/actions-taken.api.test.ts` | **Pass** |
+| **API-ACT-06** | API | **AC-01** | Terminal ticket (CLOSED/CANCELLED) rejects new Action Taken | HTTP 400 Bad Request with terminal lock | `server/tests/lab-04/actions-taken.api.test.ts` | **Pass** |
 | **API-DASH-01**| API | **AC-04** | Staff retrieves `/api/dashboards/staff` | HTTP 200 with 5 KPI counts matching DB queries | `server/tests/lab-04/staff-dashboard.api.test.ts` | **Pass** |
 | **API-DASH-02**| API | **AC-04** | Requester attempts to access `/api/dashboards/staff` | HTTP 403 Forbidden | `server/tests/lab-04/staff-dashboard.api.test.ts` | **Pass** |
 | **API-DASH-03**| API | **AC-05** | Requester retrieves `/api/dashboards/requester` | HTTP 200 with counts isolated to user's tickets | `server/tests/lab-04/requester-dashboard.api.test.ts` | **Pass** |
+| **API-DASH-04**| API | **AC-05** | Requester dashboard excludes other users' tickets | HTTP 200 containing strictly `WHERE requesterId = req.user.id` | `server/tests/lab-04/requester-dashboard.api.test.ts` | **Pass** |
 | **API-FLOW-01**| API | **AC-06** | Transition ticket to `RESOLVED` without `resolutionSummary` | HTTP 400 Bad Request requiring summary | `server/tests/lab-04/ticket-workflow.api.test.ts` | **Pass** |
 | **API-FLOW-02**| API | **AC-06** | Transition ticket to `RESOLVED` with summary >= 5 chars | HTTP 200 with status updated to `RESOLVED` | `server/tests/lab-04/ticket-workflow.api.test.ts` | **Pass** |
 | **API-FLOW-03**| API | **AC-07** | Attempt illegal status transition (e.g. `RESOLVED` ➔ `NEW`) | HTTP 400 Bad Request with illegal transition error | `server/tests/lab-04/ticket-workflow.api.test.ts` | **Pass** |
-| **API-FLOW-04**| API | **AC-08** | Stale status update with outdated `expectedUpdatedAt` | HTTP 409 Conflict | `server/tests/lab-04/ticket-workflow.api.test.ts` | **Pass** |
+| **API-FLOW-04**| API | **AC-08** | Stale status update with outdated `expectedUpdatedAt` | HTTP 409 Conflict (`STALE_UPDATE_CONFLICT`) | `server/tests/lab-04/ticket-workflow.api.test.ts` | **Pass** |
+| **API-FLOW-05**| API | **AC-06** | Advisory requester resolution toggles flag without changing status | HTTP 200 with `problemResolvedReq=true`, unchanged status | `server/tests/lab-04/ticket-workflow.api.test.ts` | **Pass** |
 | **UI-ACT-01**  | UI  | **AC-01** | Render Actions Taken list on Ticket Detail | Shows date, description, result, performer badge | `client/tests/lab-04/ActionsTaken.test.tsx` | **Pass** |
 | **UI-ACT-02**  | UI  | **AC-02** | Toggle `Follow-up Required` on Create Action Modal | Dynamically shows required `Follow-up Note` input | `client/tests/lab-04/ActionsTaken.test.tsx` | **Pass** |
 | **UI-ACT-03**  | UI  | **AC-03** | Requester views Ticket Detail Actions Taken section | Read-only mode: Add/Edit buttons hidden | `client/tests/lab-04/ActionsTaken.test.tsx` | **Pass** |
+| **UI-ACT-04**  | UI  | **AC-01** | Terminal ticket displays locked actions notice | Add Action button hidden, lock badge displayed | `client/tests/lab-04/ActionsTaken.test.tsx` | **Pass** |
+| **UI-FLOW-01** | UI  | **AC-06** | Resolution Gate validates summary >= 5 characters | Prevents status update and highlights error | `client/tests/lab-04/TicketWorkflow.test.tsx` | **Pass** |
+| **UI-FLOW-02** | UI  | **AC-07** | Status dropdown displays only permitted transitions | Illegal transitions filtered out per matrix | `client/tests/lab-04/TicketWorkflow.test.tsx` | **Pass** |
 | **UI-DASH-01** | UI  | **AC-04** | Staff Dashboard renders 5 KPI cards with deltas | Cards display correct counts, deltas, and labels | `client/tests/lab-04/StaffDashboard.test.tsx` | **Pass** |
 | **UI-DASH-02** | UI  | **AC-09** | Click `My Assigned` card on Staff Dashboard | Triggers navigation to queue filtered by `owner=me` | `client/tests/lab-04/StaffDashboard.test.tsx` | **Pass** |
 | **UI-DASH-03** | UI  | **AC-05** | Requester Dashboard renders 4 KPI cards and recents | Cards display correct counts and view-all links | `client/tests/lab-04/RequesterDashboard.test.tsx` | **Pass** |
-| **E2E-FLOW-01**| E2E | **AC-01** | Complete Staff Work Flow (Claim, Add Action, Resolve) | End-to-end multi-step flow completes in browser | `e2e/lab-04/actions-taken-flow.spec.ts` | Planned |
-| **E2E-DASH-01**| E2E | **AC-04** | Staff Dashboard Drill-down to Queue | Metric click filters queue accurately in browser | `e2e/lab-04/dashboards.spec.ts` | Planned |
-| **REG-ALL-01** | Reg | **AC-11** | Full regression suite across Labs 1, 2, and 3 | All 160 baseline automated tests pass 100% | Full Test Runner (`server` + `client`) | **Passing (160/160)** |
+| **E2E-ACT-01** | E2E | **AC-01** | Complete Staff Action Logging Flow | Add Action modal, submit, verified in table | `e2e/lab-04/actions-taken-flow.spec.ts` | **Pass** |
+| **E2E-FLOW-01**| E2E | **AC-06** | Ticket Resolution Gate validation in browser | Summary validation enforced, successful update | `e2e/lab-04/ticket-resolution.spec.ts` | **Pass** |
+| **E2E-DASH-01**| E2E | **AC-04** | Staff & Requester Dashboards Drilldown | KPI counters rendered and drilldown navigates | `e2e/lab-04/dashboards.spec.ts` | **Pass** |
+| **REG-ALL-01** | Reg | **AC-11** | Full regression suite across Labs 1, 2, 3, and 4 | All 225 automated tests pass 100% (150 server + 75 client) | Full Test Runner (`server` + `client`) | **Pass (225/225)** |
 
 ---
 
-## 3. Test Execution Commands
+## 3. Test Execution & Suite Summary
 
-### 3.1 Backend Test Execution (`server/`)
-```bash
-cd server
-npm test
-```
+### 3.1 Backend Test Suite (`server/`)
+- **Framework:** Vitest + Supertest
+- **Total Test Files:** 16 files
+- **Total Passing Tests:** 150 passed (0 failed, 0 skipped)
+- **Execution Command:**
+  ```bash
+  cd server
+  npm test
+  ```
 
-### 3.2 Frontend Test Execution (`client/`)
-```bash
-cd client
-npm test
-```
+### 3.2 Frontend Test Suite (`client/`)
+- **Framework:** Vitest + React Testing Library + JSDOM
+- **Total Test Files:** 15 files
+- **Total Passing Tests:** 75 passed (0 failed, 0 skipped)
+- **Execution Command:**
+  ```bash
+  cd client
+  npm test
+  ```
 
-### 3.3 End-to-End Playwright Execution (`e2e/`)
-```bash
-npx playwright test e2e/lab-04/
-```
+### 3.3 Full Stack Test Summary
+| Test Layer | Test Files | Passed Tests | Failed | Pass Rate |
+| :--- | :---: | :---: | :---: | :---: |
+| **Backend Integration & Unit** | 16 | 150 | 0 | **100%** |
+| **Frontend Component & Unit** | 15 | 75 | 0 | **100%** |
+| **Total Automated Regression** | **31** | **225** | **0** | **100%** |
+
+### 3.4 End-to-End Playwright Scenarios (`e2e/lab-04/`)
+- **Framework:** Playwright Test
+- **Test Suites:**
+  1. `e2e/lab-04/actions-taken-flow.spec.ts`
+  2. `e2e/lab-04/ticket-resolution.spec.ts`
+  3. `e2e/lab-04/dashboards.spec.ts`
+- **Execution Command:**
+  ```bash
+  npx playwright test e2e/lab-04/
+  ```
